@@ -1,0 +1,6 @@
+\.o$
+\.d$
+\.swp$
+^Makefile$
+^libpsys\.a$
+^libpsys\.so\.
