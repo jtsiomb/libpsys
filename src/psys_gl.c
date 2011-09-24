@@ -10,6 +10,15 @@ void psys_gl_draw_start(struct psys_emitter *em, void *cls)
 {
 	float xform[16];
 
+	vec3_t pos = psys_get_pos(em);
+
+	glPointSize(5.0);
+	glBegin(GL_POINTS);
+	glColor3f(1, 0, 0);
+	glVertex3f(pos.x, pos.y, pos.z);
+	glColor3f(1, 1, 1);
+	glEnd();
+
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
 

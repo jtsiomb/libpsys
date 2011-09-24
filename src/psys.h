@@ -33,7 +33,9 @@ void psys_set_rot(struct psys_emitter *em, quat_t rot, float tm);
 void psys_set_pivot(struct psys_emitter *em, vec3_t pivot);
 
 void psys_set_rate(struct psys_emitter *em, float rate, float tm);
+void psys_set_life(struct psys_emitter *em, float life, float tm);
 void psys_set_dir(struct psys_emitter *em, vec3_t dir, float tm);
+void psys_set_grav(struct psys_emitter *em, vec3_t grav, float tm);
 
 void psys_clear_collision_planes(struct psys_emitter *em);
 int psys_add_collision_plane(struct psys_emitter *em, plane_t plane, float elast);
@@ -52,6 +54,7 @@ quat_t psys_get_rot(struct psys_emitter *em);
 float psys_get_rate(struct psys_emitter *em);
 float psys_get_life(struct psys_emitter *em);
 vec3_t psys_get_dir(struct psys_emitter *em);
+vec3_t psys_get_grav(struct psys_emitter *em);
 
 /* update and render */
 

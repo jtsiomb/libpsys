@@ -50,15 +50,18 @@ struct psys_emitter {
 
 	/* calculated on update */
 	vec3_t cur_pos;
-	qut_t cur_rot;
+	quat_t cur_rot;
 	float cur_rate, cur_life;
 	vec3_t cur_dir;
+	vec3_t cur_grav;
 };
 
 
 struct psys_particle {
 	vec3_t pos, vel;
-	float life, size, mass;
+	float life, size;
+
+	struct psys_particle *next;
 };
 
 void psys_gl_draw_start(struct psys_emitter *em, void *cls);
