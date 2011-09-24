@@ -48,15 +48,23 @@ int psys_init(struct psys_emitter *em)
 	memset(em, 0, sizeof *em);
 
 	if(anm_init_node(&em->prs) == -1) {
+		psys_destroy(em);
 		return -1;
 	}
 	if(anm_init_track(&em->rate) == -1) {
-		anm_destroy_node(&em->prs);
+		psys_destroy(em);
+		return -1;
+	}
+	if(anm_init_track(&em->life) == -1) {
+		psys_destroy(em);
 		return -1;
 	}
 	if(init_v3track(&em->dir) == -1) {
-		anm_destroy_node(&em->prs);
-		anm_destroy_track(&em->rate);
+		psys_destroy(em);
+		return -1;
+	}
+	if(init_v3track(&em->grav) == -1) {
+		psys_destroy(em);
 		return -1;
 	}
 
@@ -106,9 +114,19 @@ void psys_set_rate(struct psys_emitter *em, float rate, float tm)
 	anm_set_value(&em->rate, ANM_SEC2TM(tm), rate);
 }
 
+void psys_set_life(struct psys_emitter *em, float life, float tm)
+{
+	anm_set_value(&em->life, ANM_SEC2TM(tm), life);
+}
+
 void psys_set_dir(struct psys_emitter *em, vec3_t dir, float tm)
 {
 	set_v3value(&em->dir, ANM_SEC2TM(tm), dir);
+}
+
+void psys_set_grav(struct psys_emitter *em, vec3_t grav, float tm)
+{
+	set_v3value(&em->grav, ANM_SEC2TM(tm), grav);
 }
 
 
@@ -120,7 +138,7 @@ void psys_clear_collision_planes(struct psys_emitter *em)
 	while(plane) {
 		struct col_plane *tmp = plane;
 		plane = plane->next;
-		pfree(tmp);
+		free(tmp);
 	}
 }
 
@@ -191,6 +209,10 @@ vec3_t psys_get_dir(struct psys_emitter *em)
 	return em->cur_dir;
 }
 
+vec3_t psys_get_grav(struct psys_emitter *em)
+{
+	return em->cur_grav;
+}
 
 /* --- update and render --- */
 
@@ -205,23 +227,24 @@ void psys_update(struct psys_emitter *em, float tm)
 
 	atm = ANM_SEC2TM(tm);
 
-	em->cur_rate = anm_get_value(&em->rate, atm)
+	em->cur_rate = anm_get_value(&em->rate, atm);
 	dt = tm - em->last_update;
 
 	/* how many particles to spawn for this interval ? */
 	spawn_count = em->cur_rate * dt;
 
 #ifndef SUB_UPDATE_POS
-	em->pos = anm_get_position(&em->prs, atm);
+	em->cur_pos = anm_get_position(&em->prs, atm);
 #endif
 	em->cur_dir = get_v3value(&em->dir, atm);
 	em->cur_life = anm_get_value(&em->life, atm);
+	em->cur_grav = get_v3value(&em->grav, atm);
 
 	spawn_dt = dt / (float)spawn_count;
 	for(i=0; i<spawn_count; i++) {
 #ifdef SUB_UPDATE_POS
 		/* update emitter position for this spawning */
-		em->pos = anm_get_position(&em->prs, ANM_SEC2TM(em->last_update + spawn_dt));
+		em->cur_pos = anm_get_position(&em->prs, ANM_SEC2TM(em->last_update + spawn_dt));
 #endif
 
 		if(!(p = palloc())) {
@@ -235,7 +258,7 @@ void psys_update(struct psys_emitter *em, float tm)
 	/* update all particles */
 	p = em->plist;
 	while(p) {
-		em->update(em, p, tm, dt, upd_cls);
+		em->update(em, p, tm, dt, em->upd_cls);
 		p = p->next;
 	}
 
@@ -259,17 +282,17 @@ void psys_draw(struct psys_emitter *em)
 	struct psys_particle *p;
 
 	if(em->draw_start) {
-		em->draw_start(em, em->cls);
+		em->draw_start(em, em->draw_cls);
 	}
 
 	p = em->plist;
 	while(p) {
-		em->draw(em, p, em->cls);
+		em->draw(em, p, em->draw_cls);
 		p = p->next;
 	}
 
 	if(em->draw_end) {
-		em->draw_end(em, em->cls);
+		em->draw_end(em, em->draw_cls);
 	}
 }
 
@@ -286,17 +309,19 @@ static int spawn(struct psys_emitter *em, struct psys_particle *p, void *cls)
 
 static void update_particle(struct psys_emitter *em, struct psys_particle *p, float tm, float dt, void *cls)
 {
-	vec3_t forces;
+	vec3_t accel;
 
-	forces.x = em->cur_grav.x * p->mass - p->vel.x * em->drag;
-	forces.y = em->cur_grav.y * p->mass - p->vel.y * em->drag;
-	forces.z = em->cur_grav.z * p->mass - p->vel.z * em->drag;
+	accel.x = em->cur_grav.x - p->vel.x * em->drag;
+	accel.y = em->cur_grav.y - p->vel.y * em->drag;
+	accel.z = em->cur_grav.z - p->vel.z * em->drag;
+
+	p->vel.x += accel.x * dt;
+	p->vel.y += accel.y * dt;
+	p->vel.z += accel.z * dt;
 
 	p->pos.x += p->vel.x * dt;
 	p->pos.y += p->vel.y * dt;
 	p->pos.z += p->vel.z * dt;
-
-
 }
 
 /* --- v3track helper --- */
@@ -359,7 +384,7 @@ static struct psys_particle *palloc(void)
 
 	if(p) {
 		memset(p, 0, sizeof *p);
-		reset_pattr(&p->attr);
+		/*reset_pattr(&p->attr);*/
 	}
 	return p;
 }
