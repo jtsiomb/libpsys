@@ -94,6 +94,11 @@ void psys_destroy(struct psys_emitter *em)
 	destroy_v3track(&em->dir);
 }
 
+void psys_set_texture(struct psys_emitter *em, unsigned int tex)
+{
+	em->tex = tex;
+}
+
 void psys_set_pos(struct psys_emitter *em, vec3_t pos, float tm)
 {
 	anm_set_position(&em->prs, pos, ANM_SEC2TM(tm));
@@ -184,6 +189,11 @@ void psys_draw_func(struct psys_emitter *em, psys_draw_func_t draw,
 }
 
 /* --- query current state --- */
+unsigned int psys_get_texture(struct psys_emitter *em)
+{
+	return em->tex;
+}
+
 vec3_t psys_get_pos(struct psys_emitter *em)
 {
 	return em->cur_pos;
@@ -218,7 +228,7 @@ vec3_t psys_get_grav(struct psys_emitter *em)
 
 void psys_update(struct psys_emitter *em, float tm)
 {
-	float dt, spawn_dt;
+	float dt, spawn_dt, spawn_tm;
 	int i, spawn_count;
 	struct psys_particle *p, pdummy;
 	anm_time_t atm;
@@ -231,21 +241,23 @@ void psys_update(struct psys_emitter *em, float tm)
 	dt = tm - em->last_update;
 
 	/* how many particles to spawn for this interval ? */
-	spawn_count = em->cur_rate * dt;
+	em->spawn_acc += em->cur_rate * dt;
+	if(em->spawn_acc >= 1.0) {
+		spawn_count = em->spawn_acc;
+		em->spawn_acc = fmod(em->spawn_acc, 1.0);
+	} else {
+		spawn_count = 0;
+	}
 
-#ifndef SUB_UPDATE_POS
-	em->cur_pos = anm_get_position(&em->prs, atm);
-#endif
 	em->cur_dir = get_v3value(&em->dir, atm);
 	em->cur_life = anm_get_value(&em->life, atm);
 	em->cur_grav = get_v3value(&em->grav, atm);
 
 	spawn_dt = dt / (float)spawn_count;
+	spawn_tm = em->last_update;
 	for(i=0; i<spawn_count; i++) {
-#ifdef SUB_UPDATE_POS
 		/* update emitter position for this spawning */
-		em->cur_pos = anm_get_position(&em->prs, ANM_SEC2TM(em->last_update + spawn_dt));
-#endif
+		em->cur_pos = anm_get_position(&em->prs, ANM_SEC2TM(spawn_tm));
 
 		if(!(p = palloc())) {
 			return;
@@ -253,6 +265,7 @@ void psys_update(struct psys_emitter *em, float tm)
 		if(em->spawn(em, p, em->spawn_cls) == -1) {
 			pfree(p);
 		}
+		spawn_tm += spawn_dt;
 	}
 
 	/* update all particles */
@@ -275,6 +288,8 @@ void psys_update(struct psys_emitter *em, float tm)
 		}
 	}
 	em->plist = pdummy.next;
+
+	em->last_update = tm;
 }
 
 void psys_draw(struct psys_emitter *em)
@@ -322,6 +337,8 @@ static void update_particle(struct psys_emitter *em, struct psys_particle *p, fl
 	p->pos.x += p->vel.x * dt;
 	p->pos.y += p->vel.y * dt;
 	p->pos.z += p->vel.z * dt;
+
+	p->life -= dt;
 }
 
 /* --- v3track helper --- */

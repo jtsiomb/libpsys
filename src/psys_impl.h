@@ -21,6 +21,8 @@ struct psys_emitter {
 
 	struct anm_node prs;
 
+	unsigned int tex;
+
 	struct anm_track rate;
 	struct anm_track life;
 	struct v3track dir;
@@ -54,6 +56,9 @@ struct psys_emitter {
 	float cur_rate, cur_life;
 	vec3_t cur_dir;
 	vec3_t cur_grav;
+
+	/* partial spawn accumulator */
+	float spawn_acc;
 };
 
 
