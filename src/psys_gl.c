@@ -10,26 +10,25 @@ void psys_gl_draw_start(struct psys_emitter *em, void *cls)
 {
 	float xform[16];
 
-	vec3_t pos = psys_get_pos(em);
-
-	glPointSize(5.0);
-	glBegin(GL_POINTS);
-	glColor3f(1, 0, 0);
-	glVertex3f(pos.x, pos.y, pos.z);
-	glColor3f(1, 1, 1);
-	glEnd();
-
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
 
 	glGetFloatv(GL_MODELVIEW_MATRIX, xform);
-	xform[3] = xform[7] = xform[11] = xform[12] = xform[13] = xform[14] = 0.0f;
-	xform[15] = 1.0f;
+	xform[0] = xform[5] = xform[10] = 1.0;
+	xform[1] = xform[2] = xform[4] = xform[6] = xform[8] = xform[9] = 0.0;
 
 	glLoadMatrixf(xform);
 
 	glPushAttrib(GL_ENABLE_BIT);
 	glDisable(GL_LIGHTING);
+
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	if(em->tex) {
+		glEnable(GL_TEXTURE_2D);
+		glBindTexture(GL_TEXTURE_2D, em->tex);
+	}
 
 	glDepthMask(0);
 

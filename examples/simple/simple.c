@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 
 #ifndef __APPLE__
 #include <GL/glut.h>
@@ -8,6 +9,7 @@
 #endif
 
 #include <vmath.h>
+#include <imago2.h>
 #include "psys.h"
 
 void disp(void);
@@ -17,8 +19,10 @@ void keyb(unsigned char key, int x, int y);
 void mouse(int bn, int state, int x, int y);
 void motion(int x, int y);
 vec3_t get_mouse_hit(float x, float y);
+unsigned int load_texture(const char *fname);
 
 struct psys_emitter *ps;
+unsigned int tex;
 
 int main(int argc, char **argv)
 {
@@ -34,13 +38,19 @@ int main(int argc, char **argv)
 	glutMotionFunc(motion);
 	glutIdleFunc(idle);
 
-	glEnable(GL_CULL_FACE);
+	glClearColor(0.05, 0.05, 0.05, 1);
+
+	if(!(tex = load_texture("pimg.png"))) {
+		fprintf(stderr, "failed to load the FUCKING TEXTURE GOD DAMN IT\n");
+		return 1;
+	}
 
 	if(!(ps = psys_create())) {
 		return 1;
 	}
-	psys_set_grav(ps, v3_cons(0, -1, 0), 0);
+	psys_set_grav(ps, v3_cons(0, -9, 0), 0);
 	psys_set_life(ps, 2, 0);
+	psys_set_texture(ps, tex);
 
 	glutMainLoop();
 	return 0;
@@ -61,6 +71,7 @@ void disp(void)
 	psys_draw(ps);
 
 	glutSwapBuffers();
+	assert(glGetError() == GL_NO_ERROR);
 }
 
 void idle(void)
@@ -90,7 +101,7 @@ void mouse(int bn, int state, int x, int y)
 {
 	bnstate[bn - GLUT_LEFT_BUTTON] = state == GLUT_DOWN;
 	if(bn == GLUT_LEFT_BUTTON) {
-		psys_set_rate(ps, state == GLUT_DOWN ? 1.0 : 0.0, 0);
+		psys_set_rate(ps, state == GLUT_DOWN ? 30.0 : 0.0, 0);
 		psys_set_pos(ps, get_mouse_hit(x, y), 0);
 	}
 }
@@ -130,4 +141,26 @@ vec3_t get_mouse_hit(float x, float y)
 	res = v3_add(pnear, v3_scale(v3_sub(pfar, pnear), t));
 
 	return res;
+}
+
+unsigned int load_texture(const char *fname)
+{
+	void *pixels;
+	int xsz, ysz;
+	unsigned int tex;
+
+	if(!(pixels = img_load_pixels(fname, &xsz, &ysz, IMG_FMT_RGBA32))) {
+		return 0;
+	}
+
+	glGenTextures(1, &tex);
+	glBindTexture(GL_TEXTURE_2D, tex);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, xsz, ysz, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+	img_free_pixels(pixels);
+
+	return tex;
 }

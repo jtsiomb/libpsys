@@ -1,14 +1,6 @@
 #ifndef LIBPSYS_H_
 #define LIBPSYS_H_
 
-/* emitter properties:
- * - p/r/s (anim)
- * - spawn rate (anim)
- * - direction (anim)
- *
- * - collision planes
- */
-
 struct psys_emitter;
 struct psys_particle;
 
@@ -27,6 +19,7 @@ int psys_init(struct psys_emitter *em);
 void psys_destroy(struct psys_emitter *em);
 
 /* set properties */
+void psys_set_texture(struct psys_emitter *em, unsigned int tex);
 
 void psys_set_pos(struct psys_emitter *em, vec3_t pos, float tm);
 void psys_set_rot(struct psys_emitter *em, quat_t rot, float tm);
@@ -49,6 +42,7 @@ void psys_draw_func(struct psys_emitter *em, psys_draw_func_t draw,
 
 
 /* query emitter state */
+unsigned int psys_get_texture(struct psys_emitter *em);
 vec3_t psys_get_pos(struct psys_emitter *em);
 quat_t psys_get_rot(struct psys_emitter *em);
 float psys_get_rate(struct psys_emitter *em);
