@@ -23,7 +23,7 @@ void psys_gl_draw_start(struct psys_emitter *em, void *cls)
 	glDisable(GL_LIGHTING);
 
 	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE);
 
 	if(em->tex) {
 		glEnable(GL_TEXTURE_2D);

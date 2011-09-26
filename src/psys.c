@@ -13,6 +13,9 @@ static void destroy_v3track(struct v3track *v3t);
 static void set_v3value(struct v3track *v3t, anm_time_t tm, vec3_t v);
 static vec3_t get_v3value(struct v3track *v3t, anm_time_t tm);
 
+static float random_val(float x, float range);
+static vec3_t random_vec3(vec3_t v, vec3_t range);
+
 /* particle pool */
 static struct psys_particle *ppool;
 static int ppool_size;
@@ -47,26 +50,26 @@ int psys_init(struct psys_emitter *em)
 {
 	memset(em, 0, sizeof *em);
 
-	if(anm_init_node(&em->prs) == -1) {
-		psys_destroy(em);
-		return -1;
-	}
-	if(anm_init_track(&em->rate) == -1) {
-		psys_destroy(em);
-		return -1;
-	}
-	if(anm_init_track(&em->life) == -1) {
-		psys_destroy(em);
-		return -1;
-	}
-	if(init_v3track(&em->dir) == -1) {
-		psys_destroy(em);
-		return -1;
-	}
-	if(init_v3track(&em->grav) == -1) {
-		psys_destroy(em);
-		return -1;
-	}
+	if(anm_init_node(&em->prs) == -1)
+		goto err;
+	if(init_v3track(&em->pos_range) == -1)
+		goto err;
+	if(anm_init_track(&em->rate) == -1)
+		goto err;
+	if(anm_init_track(&em->life) == -1)
+		goto err;
+	if(anm_init_track(&em->life_range) == -1)
+		goto err;
+	if(anm_init_track(&em->size) == -1)
+		goto err;
+	if(anm_init_track(&em->size_range) == -1)
+		goto err;
+	if(init_v3track(&em->dir) == -1)
+		goto err;
+	if(init_v3track(&em->dir_range) == -1)
+		goto err;
+	if(init_v3track(&em->grav) == -1)
+		goto err;
 
 	em->spawn = spawn;
 	em->update = update_particle;
@@ -76,6 +79,9 @@ int psys_init(struct psys_emitter *em)
 	em->draw_end = psys_gl_draw_end;
 
 	return 0;
+err:
+	psys_destroy(em);
+	return -1;
 }
 
 void psys_destroy(struct psys_emitter *em)
@@ -90,8 +96,14 @@ void psys_destroy(struct psys_emitter *em)
 	}
 
 	anm_destroy_node(&em->prs);
+	destroy_v3track(&em->pos_range);
 	anm_destroy_track(&em->rate);
+	anm_destroy_track(&em->life);
+	anm_destroy_track(&em->size);
+	anm_destroy_track(&em->size_range);
 	destroy_v3track(&em->dir);
+	destroy_v3track(&em->dir_range);
+	destroy_v3track(&em->grav);
 }
 
 void psys_set_texture(struct psys_emitter *em, unsigned int tex)
@@ -99,9 +111,10 @@ void psys_set_texture(struct psys_emitter *em, unsigned int tex)
 	em->tex = tex;
 }
 
-void psys_set_pos(struct psys_emitter *em, vec3_t pos, float tm)
+void psys_set_pos(struct psys_emitter *em, vec3_t pos, vec3_t range, float tm)
 {
 	anm_set_position(&em->prs, pos, ANM_SEC2TM(tm));
+	set_v3value(&em->pos_range, ANM_SEC2TM(tm), range);
 }
 
 void psys_set_rot(struct psys_emitter *em, quat_t rot, float tm)
@@ -119,14 +132,22 @@ void psys_set_rate(struct psys_emitter *em, float rate, float tm)
 	anm_set_value(&em->rate, ANM_SEC2TM(tm), rate);
 }
 
-void psys_set_life(struct psys_emitter *em, float life, float tm)
+void psys_set_life(struct psys_emitter *em, float life, float range, float tm)
 {
 	anm_set_value(&em->life, ANM_SEC2TM(tm), life);
+	anm_set_value(&em->life_range, ANM_SEC2TM(tm), range);
 }
 
-void psys_set_dir(struct psys_emitter *em, vec3_t dir, float tm)
+void psys_set_size(struct psys_emitter *em, float size, float range, float tm)
+{
+	anm_set_value(&em->size, ANM_SEC2TM(tm), size);
+	anm_set_value(&em->size_range, ANM_SEC2TM(tm), range);
+}
+
+void psys_set_dir(struct psys_emitter *em, vec3_t dir, vec3_t range, float tm)
 {
 	set_v3value(&em->dir, ANM_SEC2TM(tm), dir);
+	set_v3value(&em->dir_range, ANM_SEC2TM(tm), range);
 }
 
 void psys_set_grav(struct psys_emitter *em, vec3_t grav, float tm)
@@ -313,9 +334,9 @@ void psys_draw(struct psys_emitter *em)
 
 static int spawn(struct psys_emitter *em, struct psys_particle *p, void *cls)
 {
-	p->pos = em->cur_pos;
-	p->vel = em->cur_dir;
-	p->size = 1.0;
+	p->pos = random_vec3(em->cur_pos, em->cur_pos_range);
+	p->vel = random_vec3(em->cur_dir, em->dir_range);
+	p->size = random_val(em->cur_size, em->cur_size_range);
 	p->life = em->cur_life;
 
 	psys_add_particle(em, p);
@@ -413,4 +434,18 @@ static void pfree(struct psys_particle *p)
 	ppool = p;
 	ppool_size++;
 	pthread_mutex_unlock(&pool_lock);
+}
+
+static float random_val(float x, float range)
+{
+	return x + range * (float)rand() / (float)RAND_MAX - 0.5 * range;
+}
+
+static vec3_t random_vec3(vec3_t v, vec3_t range)
+{
+	vec3_t res;
+	res.x = random_val(v.x, range.x);
+	res.y = random_val(v.y, range.y);
+	res.z = random_val(v.z, range.z);
+	return res;
 }
