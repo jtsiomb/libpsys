@@ -8,10 +8,10 @@
 static int spawn(struct psys_emitter *em, struct psys_particle *p, void *cls);
 static void update_particle(struct psys_emitter *em, struct psys_particle *p, float tm, float dt, void *cls);
 
-static int init_v3track(struct v3track *v3t);
-static void destroy_v3track(struct v3track *v3t);
-static void set_v3value(struct v3track *v3t, anm_time_t tm, vec3_t v);
-static vec3_t get_v3value(struct v3track *v3t, anm_time_t tm);
+static int init_anm_track_vec3(struct anm_track_vec3 *v3t);
+static void destroy_anm_track_vec3(struct anm_track_vec3 *v3t);
+static void set_v3value(struct anm_track_vec3 *v3t, anm_time_t tm, vec3_t v);
+static vec3_t get_v3value(struct anm_track_vec3 *v3t, anm_time_t tm);
 
 static float random_val(float x, float range);
 static vec3_t random_vec3(vec3_t v, vec3_t range);
@@ -52,7 +52,7 @@ int psys_init(struct psys_emitter *em)
 
 	if(anm_init_node(&em->prs) == -1)
 		goto err;
-	if(init_v3track(&em->pos_range) == -1)
+	if(init_anm_track_vec3(&em->pos_range) == -1)
 		goto err;
 	if(anm_init_track(&em->rate) == -1)
 		goto err;
@@ -64,11 +64,11 @@ int psys_init(struct psys_emitter *em)
 		goto err;
 	if(anm_init_track(&em->size_range) == -1)
 		goto err;
-	if(init_v3track(&em->dir) == -1)
+	if(init_anm_track_vec3(&em->dir) == -1)
 		goto err;
-	if(init_v3track(&em->dir_range) == -1)
+	if(init_anm_track_vec3(&em->dir_range) == -1)
 		goto err;
-	if(init_v3track(&em->grav) == -1)
+	if(init_anm_track_vec3(&em->grav) == -1)
 		goto err;
 
 	em->spawn = spawn;
@@ -96,14 +96,14 @@ void psys_destroy(struct psys_emitter *em)
 	}
 
 	anm_destroy_node(&em->prs);
-	destroy_v3track(&em->pos_range);
+	destroy_anm_track_vec3(&em->pos_range);
 	anm_destroy_track(&em->rate);
 	anm_destroy_track(&em->life);
 	anm_destroy_track(&em->size);
 	anm_destroy_track(&em->size_range);
-	destroy_v3track(&em->dir);
-	destroy_v3track(&em->dir_range);
-	destroy_v3track(&em->grav);
+	destroy_anm_track_vec3(&em->dir);
+	destroy_anm_track_vec3(&em->dir_range);
+	destroy_anm_track_vec3(&em->grav);
 }
 
 void psys_set_texture(struct psys_emitter *em, unsigned int tex)
@@ -207,42 +207,6 @@ void psys_draw_func(struct psys_emitter *em, psys_draw_func_t draw,
 	em->draw_start = start;
 	em->draw_end = end;
 	em->draw_cls = cls;
-}
-
-/* --- query current state --- */
-unsigned int psys_get_texture(struct psys_emitter *em)
-{
-	return em->tex;
-}
-
-vec3_t psys_get_pos(struct psys_emitter *em)
-{
-	return em->cur_pos;
-}
-
-quat_t psys_get_rot(struct psys_emitter *em)
-{
-	return em->cur_rot;
-}
-
-float psys_get_rate(struct psys_emitter *em)
-{
-	return em->cur_rate;
-}
-
-float psys_get_life(struct psys_emitter *em)
-{
-	return em->cur_life;
-}
-
-vec3_t psys_get_dir(struct psys_emitter *em)
-{
-	return em->cur_dir;
-}
-
-vec3_t psys_get_grav(struct psys_emitter *em)
-{
-	return em->cur_grav;
 }
 
 /* --- update and render --- */
@@ -362,9 +326,9 @@ static void update_particle(struct psys_emitter *em, struct psys_particle *p, fl
 	p->life -= dt;
 }
 
-/* --- v3track helper --- */
+/* --- anm_track_vec3 helper --- */
 
-int init_v3track(struct v3track *v3t)
+int init_anm_track_vec3(struct anm_track_vec3 *v3t)
 {
 	if(anm_init_track(&v3t->x) == -1) {
 		return -1;
@@ -381,21 +345,21 @@ int init_v3track(struct v3track *v3t)
 	return 0;
 }
 
-static void destroy_v3track(struct v3track *v3t)
+static void destroy_anm_track_vec3(struct anm_track_vec3 *v3t)
 {
 	anm_destroy_track(&v3t->x);
 	anm_destroy_track(&v3t->y);
 	anm_destroy_track(&v3t->z);
 }
 
-static void set_v3value(struct v3track *v3t, anm_time_t tm, vec3_t v)
+static void set_v3value(struct anm_track_vec3 *v3t, anm_time_t tm, vec3_t v)
 {
 	anm_set_value(&v3t->x, tm, v.x);
 	anm_set_value(&v3t->y, tm, v.y);
 	anm_set_value(&v3t->z, tm, v.z);
 }
 
-static vec3_t get_v3value(struct v3track *v3t, anm_time_t tm)
+static vec3_t get_v3value(struct anm_track_vec3 *v3t, anm_time_t tm)
 {
 	vec3_t v;
 	v.x = anm_get_value(&v3t->x, tm);
