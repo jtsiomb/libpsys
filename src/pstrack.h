@@ -1,7 +1,7 @@
 #ifndef PSTRACK_H_
 #define PSTRACK_H_
 
-#include <vmath.h>
+#include <vmath/vmath.h>
 #include <anim/anim.h>
 
 struct psys_track {

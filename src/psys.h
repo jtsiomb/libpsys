@@ -1,7 +1,7 @@
 #ifndef LIBPSYS_H_
 #define LIBPSYS_H_
 
-#include <vmath.h>
+#include <vmath/vmath.h>
 #include <anim/anim.h>
 #include "rndval.h"
 #include "pattr.h"
