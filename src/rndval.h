@@ -2,8 +2,7 @@
 #define RNDVAL_H_
 
 #include <vmath.h>
-#include <anim/anim.h>
-#include "anm_track3.h"
+#include "pstrack.h"
 
 struct psys_rnd {
 	float value, range;
@@ -14,19 +13,14 @@ struct psys_rnd3 {
 };
 
 struct psys_anm_rnd {
-	struct anm_track value, range;
-	/* current cache */
-	anm_time_t cur_tm;
-	struct psys_rnd cur;
+	struct psys_track value, range;
 };
 
 struct psys_anm_rnd3 {
-	struct anm_track3 value, range;
-	/* current cache */
-	anm_time_t cur_tm;
-	struct psys_rnd3 cur;
+	struct psys_track3 value, range;
 };
 
+#define PSYS_EVAL_CUR	ANM_TIME_INVAL
 
 int psys_init_anm_rnd(struct psys_anm_rnd *v);
 void psys_destroy_anm_rnd(struct psys_anm_rnd *v);
