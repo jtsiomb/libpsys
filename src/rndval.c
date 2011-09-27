@@ -38,6 +38,31 @@ void psys_destroy_anm_rnd3(struct psys_anm_rnd3 *r)
 }
 
 
+void psys_set_rnd(struct psys_rnd *r, float val, float range)
+{
+	r->value = val;
+	r->range = range;
+}
+
+void psys_set_rnd3(struct psys_rnd3 *r, vec3_t val, vec3_t range)
+{
+	r->value = val;
+	r->range = range;
+}
+
+void psys_set_anm_rnd(struct psys_anm_rnd *r, anm_time_t tm, float val, float range)
+{
+	psys_set_value(&r->value, tm, val);
+	psys_set_value(&r->range, tm, range);
+}
+
+void psys_set_anm_rnd3(struct psys_anm_rnd3 *r, anm_time_t tm, vec3_t val, vec3_t range)
+{
+	psys_set_value3(&r->value, tm, val);
+	psys_set_value3(&r->range, tm, range);
+}
+
+
 float psys_eval_rnd(struct psys_rnd *r)
 {
 	return r->value + r->range * (float)rand() / (float)RAND_MAX - 0.5 * r->range;

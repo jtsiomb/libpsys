@@ -34,6 +34,10 @@ int psys_init_attr(struct psys_attributes *attr)
 		goto err;
 
 	attr->max_particles = -1;
+
+	anm_set_track_default(&attr->size.value.trk, 1.0);
+	anm_set_track_default(&attr->life.value.trk, 1.0);
+
 	return 0;
 
 err:
