@@ -1,10 +1,19 @@
+#include <string.h>
+#include <errno.h>
+
 #ifndef __APPLE__
+#ifdef WIN32
+#include <windows.h>
+#endif
+
 #include <GL/gl.h>
 #else
 #include <OpenGL/gl.h>
 #endif
 
-#include "psys_impl.h"
+#include <imago2.h>
+#include "psys.h"
+#include "psys_gl.h"
 
 void psys_gl_draw_start(struct psys_emitter *em, void *cls)
 {
@@ -25,9 +34,9 @@ void psys_gl_draw_start(struct psys_emitter *em, void *cls)
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE);
 
-	if(em->tex) {
+	if(em->attr.tex) {
 		glEnable(GL_TEXTURE_2D);
-		glBindTexture(GL_TEXTURE_2D, em->tex);
+		glBindTexture(GL_TEXTURE_2D, em->attr.tex);
 	}
 
 	glDepthMask(0);
@@ -62,4 +71,32 @@ void psys_gl_draw_end(struct psys_emitter *em, void *cls)
 
 	glMatrixMode(GL_MODELVIEW);
 	glPopMatrix();
+}
+
+
+unsigned int psys_gl_load_texture(const char *fname, void *cls)
+{
+	unsigned int tex;
+	void *pixels;
+	int xsz, ysz;
+
+	if(!(pixels = img_load_pixels(fname, &xsz, &ysz, IMG_FMT_RGBA32))) {
+		return 0;
+	}
+
+	glGenTextures(1, &tex);
+	glBindTexture(GL_TEXTURE_2D, tex);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, xsz, ysz, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+
+	img_free_pixels(pixels);
+	return tex;
+}
+
+void psys_gl_unload_texture(unsigned int tex, void *cls)
+{
+	glDeleteTextures(1, &tex);
 }

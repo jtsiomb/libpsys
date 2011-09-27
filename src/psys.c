@@ -3,18 +3,11 @@
 #include <assert.h>
 #include <pthread.h>
 #include <vmath.h>
-#include "psys_impl.h"
+#include "psys.h"
+#include "psys_gl.h"
 
 static int spawn(struct psys_emitter *em, struct psys_particle *p, void *cls);
 static void update_particle(struct psys_emitter *em, struct psys_particle *p, float tm, float dt, void *cls);
-
-static int init_anm_track_vec3(struct anm_track_vec3 *v3t);
-static void destroy_anm_track_vec3(struct anm_track_vec3 *v3t);
-static void set_v3value(struct anm_track_vec3 *v3t, anm_time_t tm, vec3_t v);
-static vec3_t get_v3value(struct anm_track_vec3 *v3t, anm_time_t tm);
-
-static float random_val(float x, float range);
-static vec3_t random_vec3(vec3_t v, vec3_t range);
 
 /* particle pool */
 static struct psys_particle *ppool;
@@ -50,26 +43,13 @@ int psys_init(struct psys_emitter *em)
 {
 	memset(em, 0, sizeof *em);
 
-	if(anm_init_node(&em->prs) == -1)
-		goto err;
-	if(init_anm_track_vec3(&em->pos_range) == -1)
-		goto err;
-	if(anm_init_track(&em->rate) == -1)
-		goto err;
-	if(anm_init_track(&em->life) == -1)
-		goto err;
-	if(anm_init_track(&em->life_range) == -1)
-		goto err;
-	if(anm_init_track(&em->size) == -1)
-		goto err;
-	if(anm_init_track(&em->size_range) == -1)
-		goto err;
-	if(init_anm_track_vec3(&em->dir) == -1)
-		goto err;
-	if(init_anm_track_vec3(&em->dir_range) == -1)
-		goto err;
-	if(init_anm_track_vec3(&em->grav) == -1)
-		goto err;
+	if(anm_init_node(&em->prs) == -1) {
+		return -1;
+	}
+	if(psys_init_attr(&em->attr) == -1) {
+		anm_destroy_node(&em->prs);
+		return -1;
+	}
 
 	em->spawn = spawn;
 	em->update = update_particle;
@@ -77,11 +57,7 @@ int psys_init(struct psys_emitter *em)
 	em->draw = psys_gl_draw;
 	em->draw_start = psys_gl_draw_start;
 	em->draw_end = psys_gl_draw_end;
-
 	return 0;
-err:
-	psys_destroy(em);
-	return -1;
 }
 
 void psys_destroy(struct psys_emitter *em)
@@ -95,26 +71,12 @@ void psys_destroy(struct psys_emitter *em)
 		pfree(tmp);
 	}
 
-	anm_destroy_node(&em->prs);
-	destroy_anm_track_vec3(&em->pos_range);
-	anm_destroy_track(&em->rate);
-	anm_destroy_track(&em->life);
-	anm_destroy_track(&em->size);
-	anm_destroy_track(&em->size_range);
-	destroy_anm_track_vec3(&em->dir);
-	destroy_anm_track_vec3(&em->dir_range);
-	destroy_anm_track_vec3(&em->grav);
+	psys_destroy_attr(&em->attr);
 }
 
-void psys_set_texture(struct psys_emitter *em, unsigned int tex)
-{
-	em->tex = tex;
-}
-
-void psys_set_pos(struct psys_emitter *em, vec3_t pos, vec3_t range, float tm)
+void psys_set_pos(struct psys_emitter *em, vec3_t pos, float tm)
 {
 	anm_set_position(&em->prs, pos, ANM_SEC2TM(tm));
-	set_v3value(&em->pos_range, ANM_SEC2TM(tm), range);
 }
 
 void psys_set_rot(struct psys_emitter *em, quat_t rot, float tm)
@@ -127,42 +89,13 @@ void psys_set_pivot(struct psys_emitter *em, vec3_t pivot)
 	anm_set_pivot(&em->prs, pivot);
 }
 
-void psys_set_rate(struct psys_emitter *em, float rate, float tm)
-{
-	anm_set_value(&em->rate, ANM_SEC2TM(tm), rate);
-}
-
-void psys_set_life(struct psys_emitter *em, float life, float range, float tm)
-{
-	anm_set_value(&em->life, ANM_SEC2TM(tm), life);
-	anm_set_value(&em->life_range, ANM_SEC2TM(tm), range);
-}
-
-void psys_set_size(struct psys_emitter *em, float size, float range, float tm)
-{
-	anm_set_value(&em->size, ANM_SEC2TM(tm), size);
-	anm_set_value(&em->size_range, ANM_SEC2TM(tm), range);
-}
-
-void psys_set_dir(struct psys_emitter *em, vec3_t dir, vec3_t range, float tm)
-{
-	set_v3value(&em->dir, ANM_SEC2TM(tm), dir);
-	set_v3value(&em->dir_range, ANM_SEC2TM(tm), range);
-}
-
-void psys_set_grav(struct psys_emitter *em, vec3_t grav, float tm)
-{
-	set_v3value(&em->grav, ANM_SEC2TM(tm), grav);
-}
-
-
 void psys_clear_collision_planes(struct psys_emitter *em)
 {
-	struct col_plane *plane;
+	struct psys_plane *plane;
 
 	plane = em->planes;
 	while(plane) {
-		struct col_plane *tmp = plane;
+		struct psys_plane *tmp = plane;
 		plane = plane->next;
 		free(tmp);
 	}
@@ -170,7 +103,7 @@ void psys_clear_collision_planes(struct psys_emitter *em)
 
 int psys_add_collision_plane(struct psys_emitter *em, plane_t plane, float elast)
 {
-	struct col_plane *node;
+	struct psys_plane *node;
 
 	if(!(node = malloc(sizeof *node))) {
 		return -1;
@@ -186,6 +119,8 @@ void psys_add_particle(struct psys_emitter *em, struct psys_particle *p)
 {
 	p->next = em->plist;
 	em->plist = p;
+
+	em->pcount++;
 }
 
 void psys_spawn_func(struct psys_emitter *em, psys_spawn_func_t func, void *cls)
@@ -216,17 +151,19 @@ void psys_update(struct psys_emitter *em, float tm)
 	float dt, spawn_dt, spawn_tm;
 	int i, spawn_count;
 	struct psys_particle *p, pdummy;
-	anm_time_t atm;
+	anm_time_t atm = ANM_SEC2TM(tm);
 
 	assert(em->spawn && em->update);
 
-	atm = ANM_SEC2TM(tm);
-
-	em->cur_rate = anm_get_value(&em->rate, atm);
 	dt = tm - em->last_update;
+	if(dt <= 0.0) {
+		return;
+	}
+
+	psys_eval_attr(&em->attr, atm);
 
 	/* how many particles to spawn for this interval ? */
-	em->spawn_acc += em->cur_rate * dt;
+	em->spawn_acc += psys_get_cur_value(&em->attr.rate) * dt;
 	if(em->spawn_acc >= 1.0) {
 		spawn_count = em->spawn_acc;
 		em->spawn_acc = fmod(em->spawn_acc, 1.0);
@@ -234,13 +171,13 @@ void psys_update(struct psys_emitter *em, float tm)
 		spawn_count = 0;
 	}
 
-	em->cur_dir = get_v3value(&em->dir, atm);
-	em->cur_life = anm_get_value(&em->life, atm);
-	em->cur_grav = get_v3value(&em->grav, atm);
-
 	spawn_dt = dt / (float)spawn_count;
 	spawn_tm = em->last_update;
 	for(i=0; i<spawn_count; i++) {
+		if(em->pcount >= em->attr.max_particles) {
+			break;
+		}
+
 		/* update emitter position for this spawning */
 		em->cur_pos = anm_get_position(&em->prs, ANM_SEC2TM(spawn_tm));
 
@@ -298,10 +235,14 @@ void psys_draw(struct psys_emitter *em)
 
 static int spawn(struct psys_emitter *em, struct psys_particle *p, void *cls)
 {
-	p->pos = random_vec3(em->cur_pos, em->cur_pos_range);
-	p->vel = random_vec3(em->cur_dir, em->dir_range);
-	p->size = random_val(em->cur_size, em->cur_size_range);
-	p->life = em->cur_life;
+	struct psys_rnd3 rpos;
+	rpos.value = em->cur_pos;
+	rpos.range = psys_get_cur_value3(&em->attr.spawn_range);
+
+	p->pos = psys_eval_rnd3(&rpos);
+	p->vel = psys_eval_anm_rnd3(&em->attr.dir, PSYS_EVAL_CUR);
+	p->size = psys_eval_anm_rnd(&em->attr.size, PSYS_EVAL_CUR);
+	p->life = psys_eval_anm_rnd(&em->attr.life, PSYS_EVAL_CUR);
 
 	psys_add_particle(em, p);
 	return 0;
@@ -309,11 +250,13 @@ static int spawn(struct psys_emitter *em, struct psys_particle *p, void *cls)
 
 static void update_particle(struct psys_emitter *em, struct psys_particle *p, float tm, float dt, void *cls)
 {
-	vec3_t accel;
+	vec3_t accel, grav;
 
-	accel.x = em->cur_grav.x - p->vel.x * em->drag;
-	accel.y = em->cur_grav.y - p->vel.y * em->drag;
-	accel.z = em->cur_grav.z - p->vel.z * em->drag;
+	grav = psys_get_cur_value3(&em->attr.grav);
+
+	accel.x = grav.x - p->vel.x * em->attr.drag;
+	accel.y = grav.y - p->vel.y * em->attr.drag;
+	accel.z = grav.z - p->vel.z * em->attr.drag;
 
 	p->vel.x += accel.x * dt;
 	p->vel.y += accel.y * dt;
@@ -324,48 +267,6 @@ static void update_particle(struct psys_emitter *em, struct psys_particle *p, fl
 	p->pos.z += p->vel.z * dt;
 
 	p->life -= dt;
-}
-
-/* --- anm_track_vec3 helper --- */
-
-int init_anm_track_vec3(struct anm_track_vec3 *v3t)
-{
-	if(anm_init_track(&v3t->x) == -1) {
-		return -1;
-	}
-	if(anm_init_track(&v3t->y) == -1) {
-		anm_destroy_track(&v3t->x);
-		return -1;
-	}
-	if(anm_init_track(&v3t->z) == -1) {
-		anm_destroy_track(&v3t->x);
-		anm_destroy_track(&v3t->y);
-		return -1;
-	}
-	return 0;
-}
-
-static void destroy_anm_track_vec3(struct anm_track_vec3 *v3t)
-{
-	anm_destroy_track(&v3t->x);
-	anm_destroy_track(&v3t->y);
-	anm_destroy_track(&v3t->z);
-}
-
-static void set_v3value(struct anm_track_vec3 *v3t, anm_time_t tm, vec3_t v)
-{
-	anm_set_value(&v3t->x, tm, v.x);
-	anm_set_value(&v3t->y, tm, v.y);
-	anm_set_value(&v3t->z, tm, v.z);
-}
-
-static vec3_t get_v3value(struct anm_track_vec3 *v3t, anm_time_t tm)
-{
-	vec3_t v;
-	v.x = anm_get_value(&v3t->x, tm);
-	v.y = anm_get_value(&v3t->y, tm);
-	v.z = anm_get_value(&v3t->z, tm);
-	return v;
 }
 
 /* --- particle allocation pool --- */
@@ -384,10 +285,6 @@ static struct psys_particle *palloc(void)
 	}
 	pthread_mutex_unlock(&pool_lock);
 
-	if(p) {
-		memset(p, 0, sizeof *p);
-		/*reset_pattr(&p->attr);*/
-	}
 	return p;
 }
 
@@ -398,18 +295,4 @@ static void pfree(struct psys_particle *p)
 	ppool = p;
 	ppool_size++;
 	pthread_mutex_unlock(&pool_lock);
-}
-
-static float random_val(float x, float range)
-{
-	return x + range * (float)rand() / (float)RAND_MAX - 0.5 * range;
-}
-
-static vec3_t random_vec3(vec3_t v, vec3_t range)
-{
-	vec3_t res;
-	res.x = random_val(v.x, range.x);
-	res.y = random_val(v.y, range.y);
-	res.z = random_val(v.z, range.z);
-	return res;
 }
