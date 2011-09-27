@@ -12,6 +12,7 @@
 #include <imago2.h>
 #include "psys.h"
 
+void cleanup(void);
 void disp(void);
 void idle(void);
 void reshape(int x, int y);
@@ -41,19 +42,28 @@ int main(int argc, char **argv)
 	glClearColor(0.05, 0.05, 0.05, 1);
 
 	if(!(tex = load_texture("pimg.png"))) {
-		fprintf(stderr, "failed to load the FUCKING TEXTURE GOD DAMN IT\n");
+		fprintf(stderr, "failed to load the texture\n");
 		return 1;
 	}
 
 	if(!(ps = psys_create())) {
 		return 1;
 	}
-	psys_set_grav(ps, v3_cons(0, -9, 0), 0);
-	psys_set_life(ps, 2, 0);
-	psys_set_texture(ps, tex);
+	psys_set_value3(&ps->attr.grav, 0, v3_cons(0, -9, 0));
+	psys_set_anm_rnd(&ps->attr.life, 0, 2, 0);
+	psys_set_value3(&ps->attr.spawn_range, 0, v3_cons(0.2, 0.2, 0.2));
+	psys_set_anm_rnd3(&ps->attr.dir, 0, v3_cons(0, 0, 0), v3_cons(2, 2, 2));
+	ps->attr.tex = tex;
+
+	atexit(cleanup);
 
 	glutMainLoop();
 	return 0;
+}
+
+void cleanup(void)
+{
+	psys_free(ps);
 }
 
 void disp(void)
@@ -101,7 +111,7 @@ void mouse(int bn, int state, int x, int y)
 {
 	bnstate[bn - GLUT_LEFT_BUTTON] = state == GLUT_DOWN;
 	if(bn == GLUT_LEFT_BUTTON) {
-		psys_set_rate(ps, state == GLUT_DOWN ? 30.0 : 0.0, 0);
+		psys_set_value(&ps->attr.rate, 0, state == GLUT_DOWN ? 30.0 : 0.0);
 		psys_set_pos(ps, get_mouse_hit(x, y), 0);
 	}
 }
