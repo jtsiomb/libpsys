@@ -1,45 +1,49 @@
 src = $(wildcard src/*.c)
 obj = $(src:.c=.o)
+dep = $(obj:.o=.d)
 lib_a = libpsys.a
-lib_so = libpsys.so
+
+ifeq ($(shell uname -s), Darwin)
+	lib_so = psys.dylib
+	shared = -dynamiclib
+else
+	somajor = 0
+	sominor = 1
+	soname = libpsys.so.$(somajor)
+	lib_so = $(soname).$(sominor)
+	solink = libpsys.so
+	shared = -shared -Wl,-soname,$(soname)
+endif
+
 
 CC = gcc
-CFLAGS = -std=c89 -pedantic -Wall -g -fPIC -Isrc `pkg-config --cflags vmath`
-LDFLAGS = `pkg-config --libs vmath`
+AR = ar
+CFLAGS = -std=c89 -pedantic -Wall -g -fPIC -Isrc
+LDFLAGS = -lanim -limago -lvmath
 
 .PHONY: all
 all: $(lib_a) $(lib_so)
 
 $(lib_a): $(obj)
-	$(AR) rcs $@ $^
+	$(AR) rcs $@ $(obj)
 
 $(lib_so): $(obj)
-	$(CC) $(CFLAGS) -shared -o $@ $^ $(LDFLAGS)
+	$(CC) $(shared) -o $@ $(obj) $(LDFLAGS)
+
+-include $(dep)
+
+%.d: %.c
+	@$(CPP) $(CFLAGS) $< -MM -MT $(@:.d=.o) >$@
+
 
 .PHONY: install
 install: $(lib_a) $(lib_so)
-	install -d $(PREFIX)/lib
-	install -m 644 $(lib_a) $(lib_so) $(PREFIX)/lib
-	install -d $(PREFIX)/include
-	install -m 644 src/psys.h $(PREFIX)/include/psys.h
-	install -d $(PREFIX)/lib/pkgconfig
-	install -m 644 psys.pc $(PREFIX)/lib/pkgconfig/psys.pc
+	@echo TODO
 
 .PHONY: uninstall
 uninstall:
-	rm -f $(PREFIX)/lib/$(lib_a)
-	rm -f $(PREFIX)/lib/$(lib_so)
-	rm -f $(PREFIX)/include/psys.h
-	rm -f $(PREFIX)/lib/pkgconfig/psys.pc
+	@echo TODO
 
 .PHONY: clean
 clean:
-	rm -f $(obj)
-
-.PHONY: distclean
-distclean:
-	rm -f $(obj) $(lib_so) $(lib_a) Makefile psys.pc
-
-.PHONY: dist
-dist: distclean
-	cd ..; tar czvf psys.tar.gz psys && mv psys.tar.gz psys/
+	rm -f $(obj) $(lib_so) $(lib_a)

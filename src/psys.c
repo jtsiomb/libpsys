@@ -2,7 +2,6 @@
 #include <math.h>
 #include <assert.h>
 #include <pthread.h>
-#include <vmath.h>
 #include "psys.h"
 #include "psys_gl.h"
 

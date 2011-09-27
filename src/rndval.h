@@ -1,7 +1,7 @@
 #ifndef RNDVAL_H_
 #define RNDVAL_H_
 
-#include <vmath.h>
+#include <vmath/vmath.h>
 #include "pstrack.h"
 
 struct psys_rnd {
