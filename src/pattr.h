@@ -4,6 +4,13 @@
 #include "pstrack.h"
 #include "rndval.h"
 
+/* the particle attributes vary from 0 to 1 during its lifetime */
+struct psys_particle_attributes {
+	struct psys_track3 color;
+	struct psys_track alpha;
+	struct psys_track size;
+};
+
 struct psys_attributes {
 	unsigned int tex;	/* OpenGL texture to use for the billboard */
 
@@ -14,8 +21,10 @@ struct psys_attributes {
 	struct psys_anm_rnd3 dir;		/* particle shoot direction */
 
 	struct psys_track3 grav;		/* external force (usually gravity) */
-
 	float drag;	/* I don't think this needs to animate */
+
+	/* particle attributes */
+	struct psys_particle_attributes part_attr;
 
 	/* limits */
 	int max_particles;

@@ -63,9 +63,4 @@ if [ "$OPT" = 'yes' ]; then
 fi
 cat Makefile.in >>Makefile
 
-echo 'creating pkg-config file ...'
-echo "prefix=$PREFIX" >psys.pc
-echo "ver=$VERSION" >>psys.pc
-cat psys.pc.in >>psys.pc
-
 echo 'configuration completed, type make (or gmake) to build.'

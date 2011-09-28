@@ -18,7 +18,7 @@ endif
 
 CC = gcc
 AR = ar
-CFLAGS = -std=c89 -pedantic -Wall -g -fPIC -Isrc
+CFLAGS = -std=c89 -pedantic -Wall $(dbg) $(opt) -fPIC -Isrc
 LDFLAGS = -lanim -limago -lvmath
 
 .PHONY: all

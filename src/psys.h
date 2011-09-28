@@ -58,7 +58,14 @@ struct psys_emitter {
 
 struct psys_particle {
 	vec3_t pos, vel;
-	float life, size;
+	float life, max_life;
+	float base_size;
+
+	struct psys_particle_attributes *pattr;
+
+	/* current particle attr values calculated during update */
+	vec3_t color;
+	float alpha, size;
 
 	struct psys_particle *next;
 };

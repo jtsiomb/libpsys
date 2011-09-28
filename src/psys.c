@@ -204,6 +204,7 @@ void psys_update(struct psys_emitter *em, float tm)
 			struct psys_particle *tmp = p->next;
 			p->next = p->next->next;
 			pfree(tmp);
+			em->pcount--;
 		} else {
 			p = p->next;
 		}
@@ -211,6 +212,8 @@ void psys_update(struct psys_emitter *em, float tm)
 	em->plist = pdummy.next;
 
 	em->last_update = tm;
+
+	printf("particles: %5d\r", em->pcount);
 }
 
 void psys_draw(struct psys_emitter *em)
@@ -240,8 +243,10 @@ static int spawn(struct psys_emitter *em, struct psys_particle *p, void *cls)
 
 	p->pos = psys_eval_rnd3(&rpos);
 	p->vel = psys_eval_anm_rnd3(&em->attr.dir, PSYS_EVAL_CUR);
-	p->size = psys_eval_anm_rnd(&em->attr.size, PSYS_EVAL_CUR);
-	p->life = psys_eval_anm_rnd(&em->attr.life, PSYS_EVAL_CUR);
+	p->base_size = psys_eval_anm_rnd(&em->attr.size, PSYS_EVAL_CUR);
+	p->max_life = p->life = psys_eval_anm_rnd(&em->attr.life, PSYS_EVAL_CUR);
+
+	p->pattr = &em->attr.part_attr;
 
 	psys_add_particle(em, p);
 	return 0;
@@ -250,6 +255,7 @@ static int spawn(struct psys_emitter *em, struct psys_particle *p, void *cls)
 static void update_particle(struct psys_emitter *em, struct psys_particle *p, float tm, float dt, void *cls)
 {
 	vec3_t accel, grav;
+	anm_time_t t;
 
 	grav = psys_get_cur_value3(&em->attr.grav);
 
@@ -264,6 +270,13 @@ static void update_particle(struct psys_emitter *em, struct psys_particle *p, fl
 	p->pos.x += p->vel.x * dt;
 	p->pos.y += p->vel.y * dt;
 	p->pos.z += p->vel.z * dt;
+
+	/* update particle attributes */
+	t = (anm_time_t)(1000.0 * (p->max_life - p->life) / p->max_life);
+
+	p->color = psys_get_value3(&p->pattr->color, t);
+	p->alpha = psys_get_value(&p->pattr->alpha, t);
+	p->size = p->base_size * psys_get_value(&p->pattr->size, t);
 
 	p->life -= dt;
 }
