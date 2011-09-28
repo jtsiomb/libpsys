@@ -25,6 +25,8 @@ unsigned int load_texture(const char *fname);
 struct psys_emitter *ps;
 unsigned int tex;
 
+#define RATE	300.0
+
 int main(int argc, char **argv)
 {
 	glutInitWindowSize(800, 600);
@@ -49,11 +51,18 @@ int main(int argc, char **argv)
 	if(!(ps = psys_create())) {
 		return 1;
 	}
-	psys_set_value3(&ps->attr.grav, 0, v3_cons(0, -9, 0));
-	psys_set_anm_rnd(&ps->attr.life, 0, 2, 0);
-	psys_set_value3(&ps->attr.spawn_range, 0, v3_cons(0.2, 0.2, 0.2));
-	psys_set_anm_rnd3(&ps->attr.dir, 0, v3_cons(0, 0, 0), v3_cons(2, 2, 2));
 	ps->attr.tex = tex;
+	ps->attr.drag = 2;
+	psys_set_value3(&ps->attr.grav, 0, v3_cons(0, -4, 0));
+	psys_set_anm_rnd(&ps->attr.life, 0, 2, 0);
+	psys_set_value3(&ps->attr.spawn_range, 0, v3_cons(0.3, 0.3, 0.3));
+	psys_set_anm_rnd3(&ps->attr.dir, 0, v3_cons(0, 0, 0), v3_cons(4, 4, 4));
+
+	psys_set_value3(&ps->attr.part_attr.color, 0, v3_cons(1.0, 0.6, 0.4));
+	psys_set_value3(&ps->attr.part_attr.color, 1000,  v3_cons(0.6, 0.3, 1.0));
+	psys_set_value(&ps->attr.part_attr.alpha, 0, 1);
+	psys_set_value(&ps->attr.part_attr.alpha, 700, 1);
+	psys_set_value(&ps->attr.part_attr.alpha, 1000, 0);
 
 	atexit(cleanup);
 
@@ -111,7 +120,7 @@ void mouse(int bn, int state, int x, int y)
 {
 	bnstate[bn - GLUT_LEFT_BUTTON] = state == GLUT_DOWN;
 	if(bn == GLUT_LEFT_BUTTON) {
-		psys_set_value(&ps->attr.rate, 0, state == GLUT_DOWN ? 30.0 : 0.0);
+		psys_set_value(&ps->attr.rate, 0, state == GLUT_DOWN ? RATE : 0.0);
 		psys_set_pos(ps, get_mouse_hit(x, y), 0);
 	}
 }

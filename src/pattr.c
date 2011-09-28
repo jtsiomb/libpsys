@@ -5,6 +5,9 @@
 #include "pattr.h"
 #include "psys_gl.h"
 
+static int init_particle_attr(struct psys_particle_attributes *pattr);
+static void destroy_particle_attr(struct psys_particle_attributes *pattr);
+
 static void *tex_cls;
 static unsigned int (*load_texture)(const char*, void*) = psys_gl_load_texture;
 static void (*unload_texture)(unsigned int, void*) = psys_gl_unload_texture;
@@ -33,6 +36,9 @@ int psys_init_attr(struct psys_attributes *attr)
 	if(psys_init_track3(&attr->grav) == -1)
 		goto err;
 
+	if(init_particle_attr(&attr->part_attr) == -1)
+		goto err;
+
 	attr->max_particles = -1;
 
 	anm_set_track_default(&attr->size.value.trk, 1.0);
@@ -45,6 +51,31 @@ err:
 	return -1;
 }
 
+
+static int init_particle_attr(struct psys_particle_attributes *pattr)
+{
+	if(psys_init_track3(&pattr->color) == -1) {
+		return -1;
+	}
+	if(psys_init_track(&pattr->alpha) == -1) {
+		psys_destroy_track3(&pattr->color);
+		return -1;
+	}
+	if(psys_init_track(&pattr->size) == -1) {
+		psys_destroy_track3(&pattr->color);
+		psys_destroy_track(&pattr->alpha);
+		return -1;
+	}
+
+	anm_set_track_default(&pattr->color.x, 1.0);
+	anm_set_track_default(&pattr->color.y, 1.0);
+	anm_set_track_default(&pattr->color.z, 1.0);
+	anm_set_track_default(&pattr->alpha.trk, 1.0);
+	anm_set_track_default(&pattr->size.trk, 1.0);
+	return 0;
+}
+
+
 void psys_destroy_attr(struct psys_attributes *attr)
 {
 	psys_destroy_track3(&attr->spawn_range);
@@ -54,9 +85,18 @@ void psys_destroy_attr(struct psys_attributes *attr)
 	psys_destroy_anm_rnd3(&attr->dir);
 	psys_destroy_track3(&attr->grav);
 
+	destroy_particle_attr(&attr->part_attr);
+
 	if(attr->tex && unload_texture) {
 		unload_texture(attr->tex, tex_cls);
 	}
+}
+
+static void destroy_particle_attr(struct psys_particle_attributes *pattr)
+{
+	psys_destroy_track3(&pattr->color);
+	psys_destroy_track(&pattr->alpha);
+	psys_destroy_track(&pattr->size);
 }
 
 void psys_eval_attr(struct psys_attributes *attr, anm_time_t tm)

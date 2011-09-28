@@ -49,6 +49,8 @@ void psys_gl_draw(struct psys_emitter *em, struct psys_particle *p, void *cls)
 {
 	float hsz = p->size / 2.0;
 
+	glColor4f(p->color.x, p->color.y, p->color.z, p->alpha);
+
 	glTexCoord2f(0, 0);
 	glVertex3f(p->pos.x - hsz, p->pos.y - hsz, p->pos.z);
 
