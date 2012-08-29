@@ -30,6 +30,10 @@ struct psys_attributes {
 	int max_particles;
 };
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void psys_texture_loader(unsigned int (*load)(const char*, void*), void (*unload)(unsigned int, void*), void *cls);
 
 int psys_init_attr(struct psys_attributes *attr);
@@ -43,4 +47,8 @@ int psys_load_attr_stream(struct psys_attributes *attr, FILE *fp);
 int psys_save_attr(struct psys_attributes *attr, const char *fname);
 int psys_save_attr_stream(struct psys_attributes *attr, FILE *fp);
 
+#ifdef __cplusplus
+}
 #endif
+
+#endif	/* PATTR_H_ */

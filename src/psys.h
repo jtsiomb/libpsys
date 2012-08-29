@@ -70,7 +70,9 @@ struct psys_particle {
 	struct psys_particle *next;
 };
 
-
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 struct psys_emitter *psys_create(void);
 void psys_free(struct psys_emitter *em);
@@ -97,5 +99,9 @@ void psys_draw_func(struct psys_emitter *em, psys_draw_func_t draw,
 
 void psys_update(struct psys_emitter *em, float tm);
 void psys_draw(struct psys_emitter *em);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* LIBPSYS_H_ */
