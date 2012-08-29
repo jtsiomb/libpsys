@@ -2,6 +2,7 @@ src = $(wildcard src/*.c)
 obj = $(src:.c=.o)
 dep = $(obj:.o=.d)
 lib_a = libpsys.a
+hdr = $(wildcard src/*.h)
 
 ifeq ($(shell uname -s), Darwin)
 	lib_so = psys.dylib
@@ -11,7 +12,7 @@ else
 	sominor = 1
 	soname = libpsys.so.$(somajor)
 	lib_so = $(soname).$(sominor)
-	solink = libpsys.so
+	devlink = libpsys.so
 	shared = -shared -Wl,-soname,$(soname)
 endif
 
@@ -38,7 +39,16 @@ $(lib_so): $(obj)
 
 .PHONY: install
 install: $(lib_a) $(lib_so)
-	@echo TODO
+	mkdir -p $(DESTDIR)$(PREFIX)/include/psys
+	cp $(hdr) $(DESTDIR)$(PREFIX)/include/psys/
+	cp $(lib_a) $(DESTDIR)$(PREFIX)/lib/$(lib_a)
+	cp $(lib_so) $(DESTDIR)$(PREFIX)/lib/$(lib_so)
+	[ -n "$(soname)" ] \
+		&& cd $(DESTDIR)$(PREFIX)/lib \
+		&& rm -f $(soname) $(devlink) \
+		&& ln -s $(lib_so) $(soname) \
+		&& ln -s $(soname) $(devlink) \
+		|| true
 
 .PHONY: uninstall
 uninstall:
