@@ -5,8 +5,9 @@ lib_a = libpsys.a
 hdr = $(wildcard src/*.h)
 
 ifeq ($(shell uname -s), Darwin)
-	lib_so = psys.dylib
+	lib_so = libpsys.dylib
 	shared = -dynamiclib
+	libgl = -framework OpenGL
 else
 	somajor = 0
 	sominor = 1
@@ -14,13 +15,14 @@ else
 	lib_so = $(soname).$(sominor)
 	devlink = libpsys.so
 	shared = -shared -Wl,-soname,$(soname)
+	libgl = -lGL
 endif
 
 
 CC = gcc
 AR = ar
 CFLAGS = -std=c89 -pedantic -Wall $(dbg) $(opt) -fPIC -Isrc
-LDFLAGS = -lanim -limago -lvmath
+LDFLAGS = -lanim -limago -lvmath $(libgl)
 
 .PHONY: all
 all: $(lib_a) $(lib_so)
@@ -52,7 +54,14 @@ install: $(lib_a) $(lib_so)
 
 .PHONY: uninstall
 uninstall:
-	@echo TODO
+	rm -f $(DESTDIR)$(PREFIX)/include/psys/*.h
+	rmdir $(DESTDIR)$(PREFIX)/include/psys
+	rm -f $(DESTDIR)$(PREFIX)/lib/$(lib_a)
+	rm -f $(DESTDIR)$(PREFIX)/lib/$(lib_so)
+	[ -n "$(soname)" ] \
+		&& cd $(DESTDIR)$(PREFIX)/lib \
+		&& rm -f $(soname) $(devlink) \
+		|| true
 
 .PHONY: clean
 clean:
