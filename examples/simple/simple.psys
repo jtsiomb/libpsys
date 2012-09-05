@@ -1,0 +1,36 @@
+# Particle system definition file format example
+#
+# lines of key = value pairs.
+# animated attributes can be defined as key(time) = value.
+# time defaults to 0 if missing. time values can have an optional s suffix,
+# signifying seconds, otherwise they are assumed to be in milliseconds.
+#
+# string values enclosed in double quotes
+# vector values enclosed in square brackets [x y z]
+# randomized values have a pair of values/vectors separated by a tilde:
+# center ~ range. If the range is missing, it's assumed to be 0.
+
+# texture: string
+texture = "pimg.png"
+# spawn_range: track3
+spawn_range = [0.3 0.3 0.3]
+# rate: track
+# life: randomized track
+life = 2
+# size: randomized track
+# dir: randomized track3
+dir = [0 0 0] ~ [4 4 4]
+# grav: track3
+grav = [0 -4 0]
+# drag: val
+drag = 2
+
+# particle attributes
+# pcolor: track3
+pcolor(0) = [1 0.6 0.4]
+pcolor(1000) = [0.6 0.3 1]
+# palpha: track
+palpha(0) = 1
+palpha(700) = 1
+palpha(1000) = 0
+# psize: track

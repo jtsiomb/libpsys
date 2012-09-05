@@ -7,6 +7,7 @@
 
 static int init_particle_attr(struct psys_particle_attributes *pattr);
 static void destroy_particle_attr(struct psys_particle_attributes *pattr);
+static char *stripspace(char *str);
 
 static void *tex_cls;
 static unsigned int (*load_texture)(const char*, void*) = psys_gl_load_texture;
@@ -125,7 +126,30 @@ int psys_load_attr(struct psys_attributes *attr, const char *fname)
 
 int psys_load_attr_stream(struct psys_attributes *attr, FILE *fp)
 {
-	return -1;	/* TODO */
+	int lineno = 0;
+	char buf[512];
+
+	psys_init_attr(attr);
+
+	while(fgets(buf, sizeof buf, fp)) {
+		char *key, *valstr;
+
+		lineno++;
+
+		key = stripspace(buf);
+		if(key[0] == '#' || !key[0]) {
+			continue;	// skip empty lines and comments
+		}
+
+		if(!(valstr = strchr(buf, '='))) {
+			fprintf(stderr "%s: invalid input: %s\n", __func__, line);
+			return -1;
+		}
+		*valstr++ = 0;
+		valstr = stripspace(valstr);
+
+
+	}
 }
 
 
@@ -146,4 +170,20 @@ int psys_save_attr(struct psys_attributes *attr, const char *fname)
 int psys_save_attr_stream(struct psys_attributes *attr, FILE *fp)
 {
 	return -1;	/* TODO */
+}
+
+
+static char *stripspace(char *str)
+{
+	char *end;
+
+	while(*str && isspace(*str)) {
+		str++;
+	}
+
+	end = str + strlen(str);
+	while(end >= str && isspace(*end)) {
+		*end-- = 0;
+	}
+	return str;
 }
