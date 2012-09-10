@@ -2,6 +2,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <ctype.h>
+
+#ifdef _MSC_VER
+#include <malloc.h>
+#else
+#include <alloca.h>
+#endif
+
 #include "pattr.h"
 #include "psys_gl.h"
 
@@ -23,6 +31,7 @@ struct cfgopt {
 
 static int init_particle_attr(struct psys_particle_attributes *pattr);
 static void destroy_particle_attr(struct psys_particle_attributes *pattr);
+static int get_cfg_opt(const char *line, struct cfgopt *opt);
 static char *stripspace(char *str);
 
 static void *tex_cls;
@@ -161,9 +170,42 @@ int psys_load_attr_stream(struct psys_attributes *attr, FILE *fp)
 			if(opt.type != OPT_STR) {
 				goto err;
 			}
-			/* XXX cont. */
+			if(!(attr->tex = load_texture(opt.valstr, tex_cls))) {
+				fprintf(stderr, "failed to load texture: %s\n", opt.valstr);
+				goto err;
+			}
+		} else if(opt.type == OPT_STR) {
+			fprintf(stderr, "invalid particle config: %s\n", opt.name);
+			goto err;
+		}
+
+		if(strcmp(opt.name, "spawn_range") == 0) {
+			psys_set_value3(&attr->spawn_range, opt.tm, opt.val);
+		} else if(strcmp(opt.name, "rate") == 0) {
+			psys_set_value(&attr->rate, opt.tm, opt.val.x);
+		} else if(strcmp(opt.name, "life") == 0) {
+			psys_set_anm_rnd(&attr->life, opt.tm, opt.val.x, opt.valrng.x);
+		} else if(strcmp(opt.name, "size") == 0) {
+			psys_set_anm_rnd(&attr->size, opt.tm, opt.val.x, opt.valrng.x);
+		} else if(strcmp(opt.name, "dir") == 0) {
+			psys_set_anm_rnd3(&attr->dir, opt.tm, opt.val, opt.valrng);
+		} else if(strcmp(opt.name, "grav") == 0) {
+			psys_set_value3(&attr->grav, opt.tm, opt.val);
+		} else if(strcmp(opt.name, "drag") == 0) {
+			attr->drag = opt.val.x;
+		} else if(strcmp(opt.name, "pcolor") == 0) {
+			psys_set_value3(&attr->part_attr.color, opt.tm, opt.val);
+		} else if(strcmp(opt.name, "palpha") == 0) {
+			psys_set_value(&attr->part_attr.alpha, opt.tm, opt.val.x);
+		} else if(strcmp(opt.name, "psize") == 0) {
+			psys_set_value(&attr->part_attr.size, opt.tm, opt.val.x);
+		} else {
+			fprintf(stderr, "unrecognized particle config option: %s\n", opt.name);
+			goto err;
 		}
 	}
+
+	return 0;
 
 err:
 	fprintf(stderr, "Line %d: error parsing particle definition\n", lineno);
@@ -172,19 +214,14 @@ err:
 }
 
 /* strdup on the stack with alloca */
-#define strdup_stack(s) \
-	do { \
-		size_t len = strlen(s); \
-		char *res = alloca(len + 1); \
-		memcpy(res, s, len + 1); \
-	} while(0)
+#define strdup_stack(s)  strcpy(alloca(strlen(s) + 1), s)
 
 static int get_cfg_opt(const char *line, struct cfgopt *opt)
 {
 	char *buf;
 	float tmsec;
 
-	line = stripspace(line);
+	line = stripspace((char*)line);
 	if(line[0] == '#' || !line[0]) {
 		return 0;	/* skip empty lines and comments */
 	}
@@ -216,7 +253,7 @@ static int get_cfg_opt(const char *line, struct cfgopt *opt)
 		/* value is a number range */
 		opt->type = OPT_NUM_RANGE;
 		opt->val.y = opt->val.z = opt->val.x;
-		opt->valrng.y = opt->valrng.z = opt->valrgn.x;
+		opt->valrng.y = opt->valrng.z = opt->valrng.x;
 
 	} else if(sscanf(opt->valstr, "[%f %f %f]", &opt->val.x, &opt->val.y, &opt->val.z) == 3) {
 		/* value is a vector */
