@@ -1,5 +1,6 @@
 #include <string.h>
 #include <errno.h>
+#include <assert.h>
 
 #ifndef __APPLE__
 #ifdef WIN32
@@ -85,6 +86,7 @@ unsigned int psys_gl_load_texture(const char *fname, void *cls)
 	if(!(pixels = img_load_pixels(fname, &xsz, &ysz, IMG_FMT_RGBA32))) {
 		return 0;
 	}
+	printf("%s: creating texture %s (%dx%d)\n", __func__, fname, xsz, ysz);
 
 	glGenTextures(1, &tex);
 	glBindTexture(GL_TEXTURE_2D, tex);
@@ -92,7 +94,9 @@ unsigned int psys_gl_load_texture(const char *fname, void *cls)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, xsz, ysz, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, xsz, ysz, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+
+	assert(glGetError() == GL_NO_ERROR);
 
 	img_free_pixels(pixels);
 	return tex;
