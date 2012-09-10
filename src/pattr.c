@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -31,7 +32,8 @@ struct cfgopt {
 
 static int init_particle_attr(struct psys_particle_attributes *pattr);
 static void destroy_particle_attr(struct psys_particle_attributes *pattr);
-static int get_cfg_opt(const char *line, struct cfgopt *opt);
+static struct cfgopt *get_cfg_opt(const char *line);
+static void release_cfg_opt(struct cfgopt *opt);
 static char *stripspace(char *str);
 
 static void *tex_cls;
@@ -154,93 +156,114 @@ int psys_load_attr_stream(struct psys_attributes *attr, FILE *fp)
 {
 	int lineno = 0;
 	char buf[512];
+	struct cfgopt *opt = 0;
 
 	psys_init_attr(attr);
 
 	while(fgets(buf, sizeof buf, fp)) {
-		struct cfgopt opt;
 
 		lineno++;
 
-		if(get_cfg_opt(buf, &opt) == -1) {
+		if(!(opt = get_cfg_opt(buf))) {
+			continue;
+		}
+
+		if(strcmp(opt->name, "texture") == 0) {
+			if(opt->type != OPT_STR) {
+				goto err;
+			}
+			if(!(attr->tex = load_texture(opt->valstr, tex_cls))) {
+				fprintf(stderr, "failed to load texture: %s\n", opt->valstr);
+				goto err;
+			}
+
+			release_cfg_opt(opt);
+			continue;
+		} else if(opt->type == OPT_STR) {
+			fprintf(stderr, "invalid particle config: '%s'\n", opt->name);
 			goto err;
 		}
 
-		if(strcmp(opt.name, "texture")) {
-			if(opt.type != OPT_STR) {
-				goto err;
-			}
-			if(!(attr->tex = load_texture(opt.valstr, tex_cls))) {
-				fprintf(stderr, "failed to load texture: %s\n", opt.valstr);
-				goto err;
-			}
-		} else if(opt.type == OPT_STR) {
-			fprintf(stderr, "invalid particle config: %s\n", opt.name);
-			goto err;
-		}
-
-		if(strcmp(opt.name, "spawn_range") == 0) {
-			psys_set_value3(&attr->spawn_range, opt.tm, opt.val);
-		} else if(strcmp(opt.name, "rate") == 0) {
-			psys_set_value(&attr->rate, opt.tm, opt.val.x);
-		} else if(strcmp(opt.name, "life") == 0) {
-			psys_set_anm_rnd(&attr->life, opt.tm, opt.val.x, opt.valrng.x);
-		} else if(strcmp(opt.name, "size") == 0) {
-			psys_set_anm_rnd(&attr->size, opt.tm, opt.val.x, opt.valrng.x);
-		} else if(strcmp(opt.name, "dir") == 0) {
-			psys_set_anm_rnd3(&attr->dir, opt.tm, opt.val, opt.valrng);
-		} else if(strcmp(opt.name, "grav") == 0) {
-			psys_set_value3(&attr->grav, opt.tm, opt.val);
-		} else if(strcmp(opt.name, "drag") == 0) {
-			attr->drag = opt.val.x;
-		} else if(strcmp(opt.name, "pcolor") == 0) {
-			psys_set_value3(&attr->part_attr.color, opt.tm, opt.val);
-		} else if(strcmp(opt.name, "palpha") == 0) {
-			psys_set_value(&attr->part_attr.alpha, opt.tm, opt.val.x);
-		} else if(strcmp(opt.name, "psize") == 0) {
-			psys_set_value(&attr->part_attr.size, opt.tm, opt.val.x);
+		if(strcmp(opt->name, "spawn_range") == 0) {
+			psys_set_value3(&attr->spawn_range, opt->tm, opt->val);
+		} else if(strcmp(opt->name, "rate") == 0) {
+			psys_set_value(&attr->rate, opt->tm, opt->val.x);
+		} else if(strcmp(opt->name, "life") == 0) {
+			psys_set_anm_rnd(&attr->life, opt->tm, opt->val.x, opt->valrng.x);
+		} else if(strcmp(opt->name, "size") == 0) {
+			psys_set_anm_rnd(&attr->size, opt->tm, opt->val.x, opt->valrng.x);
+		} else if(strcmp(opt->name, "dir") == 0) {
+			psys_set_anm_rnd3(&attr->dir, opt->tm, opt->val, opt->valrng);
+		} else if(strcmp(opt->name, "grav") == 0) {
+			psys_set_value3(&attr->grav, opt->tm, opt->val);
+		} else if(strcmp(opt->name, "drag") == 0) {
+			attr->drag = opt->val.x;
+		} else if(strcmp(opt->name, "pcolor") == 0) {
+			psys_set_value3(&attr->part_attr.color, opt->tm, opt->val);
+		} else if(strcmp(opt->name, "palpha") == 0) {
+			psys_set_value(&attr->part_attr.alpha, opt->tm, opt->val.x);
+		} else if(strcmp(opt->name, "psize") == 0) {
+			psys_set_value(&attr->part_attr.size, opt->tm, opt->val.x);
 		} else {
-			fprintf(stderr, "unrecognized particle config option: %s\n", opt.name);
+			fprintf(stderr, "unrecognized particle config option: %s\n", opt->name);
 			goto err;
 		}
+
+		release_cfg_opt(opt);
 	}
 
 	return 0;
 
 err:
 	fprintf(stderr, "Line %d: error parsing particle definition\n", lineno);
-	psys_destroy_attr(attr);
+	release_cfg_opt(opt);
 	return -1;
 }
 
-/* strdup on the stack with alloca */
-#define strdup_stack(s)  strcpy(alloca(strlen(s) + 1), s)
-
-static int get_cfg_opt(const char *line, struct cfgopt *opt)
+static struct cfgopt *get_cfg_opt(const char *line)
 {
-	char *buf;
-	float tmsec;
+	char *buf, *tmp;
+	struct cfgopt *opt;
 
 	line = stripspace((char*)line);
 	if(line[0] == '#' || !line[0]) {
 		return 0;	/* skip empty lines and comments */
 	}
+
+	if(!(opt = malloc(sizeof *opt))) {
+		return 0;
+	}
+
 	if(!(opt->valstr = strchr(line, '='))) {
-		return -1;
+		release_cfg_opt(opt);
+		return 0;
 	}
 	*opt->valstr++ = 0;
 	opt->valstr = stripspace(opt->valstr);
 
 	/* allocate a working buffer on the stack that could fit the current line */
 	buf = alloca(strlen(line) + 1);
+	strcpy(buf, line);
+	buf = stripspace(buf);
 
-	if(sscanf(line, "%s(%fs)", buf, &tmsec) == 2) {
-		opt->tm = (long)(tmsec * 1000.0f);
-		opt->name = strdup_stack(buf);
-	} else if(sscanf(line, "%s(%ld)", buf, &opt->tm) == 2) {
-		opt->name = strdup_stack(buf);
+	/* parse the keyframe time specifier if it exists */
+	if((tmp = strchr(buf, '('))) {
+		char *endp;
+		float tval;
+
+		*tmp++ = 0;
+		opt->name = strdup(buf);
+
+		tval = strtod(tmp + 1, &endp);
+		if(endp == tmp + 1) { /* nada ... */
+			opt->tm = 0;
+		} else if(*endp == 's') {	/* seconds suffix */
+			opt->tm = (long)(tval * 1000.0f);
+		} else {
+			opt->tm = (long)tval;
+		}
 	} else {
-		opt->name = strdup_stack(buf);
+		opt->name = strdup(buf);
 		opt->tm = 0;
 	}
 
@@ -268,16 +291,26 @@ static int get_cfg_opt(const char *line, struct cfgopt *opt)
 
 	} else if(sscanf(opt->valstr, "\"%s\"", buf) == 1) {
 		/* just a string... strip the quotes */
+		if(buf[strlen(buf) - 1] == '\"') {
+			buf[strlen(buf) - 1] = 0;
+		}
 		opt->type = OPT_STR;
-		opt->valstr = strdup_stack(buf);
+		opt->valstr = strdup(buf);
 	} else {
 		/* fuck it ... */
-		return -1;
+		release_cfg_opt(opt);
+		return 0;
 	}
 
-	return 0;
+	return opt;
 }
 
+static void release_cfg_opt(struct cfgopt *opt)
+{
+	if(opt) {
+		free(opt->name);
+	}
+}
 
 
 int psys_save_attr(struct psys_attributes *attr, const char *fname)
@@ -308,7 +341,7 @@ static char *stripspace(char *str)
 		str++;
 	}
 
-	end = str + strlen(str);
+	end = str + strlen(str) - 1;
 	while(end >= str && isspace(*end)) {
 		*end-- = 0;
 	}

@@ -51,7 +51,12 @@ int main(int argc, char **argv)
 	if(!(ps = psys_create())) {
 		return 1;
 	}
-	ps->attr.tex = tex;
+	if(psys_load_attr(&ps->attr, "simple.psys") == -1) {
+		fprintf(stderr, "failed to load particle system definition\n");
+		psys_free(ps);
+		return 1;
+	}
+	/*ps->attr.tex = tex;
 	ps->attr.drag = 2;
 	psys_set_value3(&ps->attr.grav, 0, v3_cons(0, -4, 0));
 	psys_set_anm_rnd(&ps->attr.life, 0, 2, 0);
@@ -62,8 +67,9 @@ int main(int argc, char **argv)
 	psys_set_value3(&ps->attr.part_attr.color, 1000,  v3_cons(0.6, 0.3, 1.0));
 	psys_set_value(&ps->attr.part_attr.alpha, 0, 1);
 	psys_set_value(&ps->attr.part_attr.alpha, 700, 1);
-	psys_set_value(&ps->attr.part_attr.alpha, 1000, 0);
+	psys_set_value(&ps->attr.part_attr.alpha, 1000, 0);*/
 
+	assert(glGetError() == GL_NO_ERROR);
 	atexit(cleanup);
 
 	glutMainLoop();
