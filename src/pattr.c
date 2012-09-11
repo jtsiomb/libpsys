@@ -254,8 +254,8 @@ static struct cfgopt *get_cfg_opt(const char *line)
 		*tmp++ = 0;
 		opt->name = strdup(buf);
 
-		tval = strtod(tmp + 1, &endp);
-		if(endp == tmp + 1) { /* nada ... */
+		tval = strtod(tmp, &endp);
+		if(endp == tmp) { /* nada ... */
 			opt->tm = 0;
 		} else if(*endp == 's') {	/* seconds suffix */
 			opt->tm = (long)(tval * 1000.0f);
