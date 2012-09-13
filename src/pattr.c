@@ -48,6 +48,24 @@ void psys_texture_loader(unsigned int (*load)(const char*, void*), void (*unload
 	tex_cls = cls;
 }
 
+struct psys_attributes *psys_create_attr(void)
+{
+	struct psys_attributes *attr = malloc(sizeof *attr);
+	if(attr) {
+		if(psys_init_attr(attr) == -1) {
+			free(attr);
+			attr = 0;
+		}
+	}
+	return attr;
+}
+
+void psys_free_attr(struct psys_attributes *attr)
+{
+	psys_destroy_attr(attr);
+	free(attr);
+}
+
 int psys_init_attr(struct psys_attributes *attr)
 {
 	memset(attr, 0, sizeof *attr);
@@ -142,6 +160,10 @@ int psys_load_attr(struct psys_attributes *attr, const char *fname)
 {
 	FILE *fp;
 	int res;
+
+	if(!fname) {
+		return -1;
+	}
 
 	if(!(fp = fopen(fname, "r"))) {
 		fprintf(stderr, "%s: failed to read file: %s: %s\n", __func__, fname, strerror(errno));
