@@ -36,6 +36,9 @@ extern "C" {
 
 void psys_texture_loader(unsigned int (*load)(const char*, void*), void (*unload)(unsigned int, void*), void *cls);
 
+struct psys_attributes *psys_create_attr(void);
+void psys_free_attr(struct psys_attributes *attr);
+
 int psys_init_attr(struct psys_attributes *attr);
 void psys_destroy_attr(struct psys_attributes *attr);
 
