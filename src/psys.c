@@ -213,7 +213,7 @@ void psys_update(struct psys_emitter *em, float tm)
 
 	em->last_update = tm;
 
-	printf("particles: %5d\r", em->pcount);
+	/*printf("particles: %5d\r", em->pcount);*/
 }
 
 void psys_draw(struct psys_emitter *em)
