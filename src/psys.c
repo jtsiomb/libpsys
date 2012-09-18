@@ -88,6 +88,21 @@ void psys_set_pivot(struct psys_emitter *em, vec3_t pivot)
 	anm_set_pivot(&em->prs, pivot);
 }
 
+vec3_t psys_get_pos(struct psys_emitter *em, float tm)
+{
+	return anm_get_node_position(&em->prs, ANM_SEC2TM(tm));
+}
+
+quat_t psys_get_rot(struct psys_emitter *em, float tm)
+{
+	return anm_get_node_rotation(&em->prs, ANM_SEC2TM(tm));
+}
+
+vec3_t psys_get_pivot(struct psys_emitter *em)
+{
+	return anm_get_pivot(&em->prs);
+}
+
 void psys_clear_collision_planes(struct psys_emitter *em)
 {
 	struct psys_plane *plane;

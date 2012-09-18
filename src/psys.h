@@ -85,6 +85,10 @@ void psys_set_pos(struct psys_emitter *em, vec3_t pos, float tm);
 void psys_set_rot(struct psys_emitter *em, quat_t rot, float tm);
 void psys_set_pivot(struct psys_emitter *em, vec3_t pivot);
 
+vec3_t psys_get_pos(struct psys_emitter *em, float tm);
+quat_t psys_get_rot(struct psys_emitter *em, float tm);
+vec3_t psys_get_pivot(struct psys_emitter *em);
+
 void psys_clear_collision_planes(struct psys_emitter *em);
 int psys_add_collision_plane(struct psys_emitter *em, plane_t plane, float elast);
 
