@@ -166,7 +166,7 @@ int psys_load_attr(struct psys_attributes *attr, const char *fname)
 	}
 
 	if(!(fp = fopen(fname, "r"))) {
-		fprintf(stderr, "%s: failed to read file: %s: %s\n", __func__, fname, strerror(errno));
+		fprintf(stderr, "%s: failed to read file: %s: %s\n", __FUNCTION__, fname, strerror(errno));
 		return -1;
 	}
 	res = psys_load_attr_stream(attr, fp);
@@ -247,6 +247,9 @@ static struct cfgopt *get_cfg_opt(const char *line)
 	char *buf, *tmp;
 	struct cfgopt *opt;
 
+	/* allocate a working buffer on the stack that could fit the current line */
+	buf = alloca(strlen(line) + 1);
+
 	line = stripspace((char*)line);
 	if(line[0] == '#' || !line[0]) {
 		return 0;	/* skip empty lines and comments */
@@ -263,8 +266,6 @@ static struct cfgopt *get_cfg_opt(const char *line)
 	*opt->valstr++ = 0;
 	opt->valstr = stripspace(opt->valstr);
 
-	/* allocate a working buffer on the stack that could fit the current line */
-	buf = alloca(strlen(line) + 1);
 	strcpy(buf, line);
 	buf = stripspace(buf);
 
@@ -274,7 +275,8 @@ static struct cfgopt *get_cfg_opt(const char *line)
 		float tval;
 
 		*tmp++ = 0;
-		opt->name = strdup(buf);
+		opt->name = malloc(strlen(buf) + 1);
+		strcpy(opt->name, buf);
 
 		tval = strtod(tmp, &endp);
 		if(endp == tmp) { /* nada ... */
@@ -285,7 +287,8 @@ static struct cfgopt *get_cfg_opt(const char *line)
 			opt->tm = (long)tval;
 		}
 	} else {
-		opt->name = strdup(buf);
+		opt->name = malloc(strlen(buf) + 1);
+		strcpy(opt->name, buf);
 		opt->tm = 0;
 	}
 
@@ -331,7 +334,9 @@ static void release_cfg_opt(struct cfgopt *opt)
 {
 	if(opt) {
 		free(opt->name);
+		opt->name = 0;
 	}
+	opt = 0;
 }
 
 
@@ -341,7 +346,7 @@ int psys_save_attr(struct psys_attributes *attr, const char *fname)
 	int res;
 
 	if(!(fp = fopen(fname, "w"))) {
-		fprintf(stderr, "%s: failed to write file: %s: %s\n", __func__, fname, strerror(errno));
+		fprintf(stderr, "%s: failed to write file: %s: %s\n", __FUNCTION__, fname, strerror(errno));
 		return -1;
 	}
 	res = psys_save_attr_stream(attr, fp);
