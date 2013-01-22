@@ -84,7 +84,7 @@ unsigned int psys_gl_load_texture(const char *fname, void *cls)
 	if(!(pixels = img_load_pixels(fname, &xsz, &ysz, IMG_FMT_RGBA32))) {
 		return 0;
 	}
-	printf("%s: creating texture %s (%dx%d)\n", __func__, fname, xsz, ysz);
+	printf("%s: creating texture %s (%dx%d)\n", __FUNCTION__, fname, xsz, ysz);
 
 	glGenTextures(1, &tex);
 	glBindTexture(GL_TEXTURE_2D, tex);
