@@ -16,7 +16,7 @@
 #include "psys.h"
 #include "psys_gl.h"
 
-void psys_gl_draw_start(struct psys_emitter *em, void *cls)
+void psys_gl_draw_start(const struct psys_emitter *em, void *cls)
 {
 	glPushAttrib(GL_ENABLE_BIT);
 	glDisable(GL_LIGHTING);
@@ -32,7 +32,7 @@ void psys_gl_draw_start(struct psys_emitter *em, void *cls)
 	glDepthMask(0);
 }
 
-void psys_gl_draw(struct psys_emitter *em, struct psys_particle *p, void *cls)
+void psys_gl_draw(const struct psys_emitter *em, const struct psys_particle *p, void *cls)
 {
 	float hsz = p->size / 2.0;
 
@@ -68,7 +68,7 @@ void psys_gl_draw(struct psys_emitter *em, struct psys_particle *p, void *cls)
 	glPopMatrix();
 }
 
-void psys_gl_draw_end(struct psys_emitter *em, void *cls)
+void psys_gl_draw_end(const struct psys_emitter *em, void *cls)
 {
 	glDepthMask(1);
 	glPopAttrib();

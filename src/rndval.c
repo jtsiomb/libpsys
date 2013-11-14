@@ -37,6 +37,17 @@ void psys_destroy_anm_rnd3(struct psys_anm_rnd3 *r)
 	psys_destroy_track3(&r->range);
 }
 
+void psys_copy_anm_rnd(struct psys_anm_rnd *dest, const struct psys_anm_rnd *src)
+{
+	psys_copy_track(&dest->value, &src->value);
+	psys_copy_track(&dest->range, &src->range);
+}
+
+void psys_copy_anm_rnd3(struct psys_anm_rnd3 *dest, const struct psys_anm_rnd3 *src)
+{
+	psys_copy_track3(&dest->value, &src->value);
+	psys_copy_track3(&dest->range, &src->range);
+}
 
 void psys_set_rnd(struct psys_rnd *r, float val, float range)
 {

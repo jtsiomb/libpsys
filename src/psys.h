@@ -12,9 +12,9 @@ struct psys_emitter;
 typedef int (*psys_spawn_func_t)(struct psys_emitter*, struct psys_particle*, void*);
 typedef void (*psys_update_func_t)(struct psys_emitter*, struct psys_particle*, float, float, void*);
 
-typedef void (*psys_draw_func_t)(struct psys_emitter*, struct psys_particle*, void*);
-typedef void (*psys_draw_start_func_t)(struct psys_emitter*, void*);
-typedef void (*psys_draw_end_func_t)(struct psys_emitter*, void*);
+typedef void (*psys_draw_func_t)(const struct psys_emitter*, const struct psys_particle*, void*);
+typedef void (*psys_draw_start_func_t)(const struct psys_emitter*, void*);
+typedef void (*psys_draw_end_func_t)(const struct psys_emitter*, void*);
 
 
 struct psys_plane {
@@ -102,7 +102,7 @@ void psys_draw_func(struct psys_emitter *em, psys_draw_func_t draw,
 /* update and render */
 
 void psys_update(struct psys_emitter *em, float tm);
-void psys_draw(struct psys_emitter *em);
+void psys_draw(const struct psys_emitter *em);
 
 #ifdef __cplusplus
 }

@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <math.h>
+#include <float.h>
 #include <assert.h>
 #include <pthread.h>
 #include "psys.h"
@@ -227,13 +228,13 @@ void psys_update(struct psys_emitter *em, float tm)
 	em->plist = pdummy.next;
 
 	em->last_update = tm;
-
-	/*printf("particles: %5d\r", em->pcount);*/
 }
 
-void psys_draw(struct psys_emitter *em)
+void psys_draw(const struct psys_emitter *em)
 {
 	struct psys_particle *p;
+
+	assert(em->draw);
 
 	if(em->draw_start) {
 		em->draw_start(em, em->draw_cls);
