@@ -22,10 +22,17 @@ struct psys_anm_rnd3 {
 
 #define PSYS_EVAL_CUR	ANM_TIME_INVAL
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 int psys_init_anm_rnd(struct psys_anm_rnd *v);
 void psys_destroy_anm_rnd(struct psys_anm_rnd *v);
 int psys_init_anm_rnd3(struct psys_anm_rnd3 *v);
 void psys_destroy_anm_rnd3(struct psys_anm_rnd3 *v);
+
+void psys_copy_anm_rnd(struct psys_anm_rnd *dest, const struct psys_anm_rnd *src);
+void psys_copy_anm_rnd3(struct psys_anm_rnd3 *dest, const struct psys_anm_rnd3 *src);
 
 void psys_set_rnd(struct psys_rnd *r, float val, float range);
 void psys_set_rnd3(struct psys_rnd3 *r, vec3_t val, vec3_t range);
@@ -39,5 +46,8 @@ vec3_t psys_eval_rnd3(struct psys_rnd3 *r);
 float psys_eval_anm_rnd(struct psys_anm_rnd *r, anm_time_t tm);
 vec3_t psys_eval_anm_rnd3(struct psys_anm_rnd3 *r, anm_time_t tm);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* RNDVAL_H_ */

@@ -42,13 +42,18 @@ void psys_free_attr(struct psys_attributes *attr);
 int psys_init_attr(struct psys_attributes *attr);
 void psys_destroy_attr(struct psys_attributes *attr);
 
+/* copies particle system attributes src to dest
+ * XXX: dest must have been initialized first
+ */
+void psys_copy_attr(struct psys_attributes *dest, const struct psys_attributes *src);
+
 void psys_eval_attr(struct psys_attributes *attr, anm_time_t tm);
 
 int psys_load_attr(struct psys_attributes *attr, const char *fname);
 int psys_load_attr_stream(struct psys_attributes *attr, FILE *fp);
 
-int psys_save_attr(struct psys_attributes *attr, const char *fname);
-int psys_save_attr_stream(struct psys_attributes *attr, FILE *fp);
+int psys_save_attr(const struct psys_attributes *attr, const char *fname);
+int psys_save_attr_stream(const struct psys_attributes *attr, FILE *fp);
 
 #ifdef __cplusplus
 }

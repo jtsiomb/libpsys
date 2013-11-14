@@ -146,6 +146,28 @@ static void destroy_particle_attr(struct psys_particle_attributes *pattr)
 	psys_destroy_track(&pattr->size);
 }
 
+void psys_copy_attr(struct psys_attributes *dest, const struct psys_attributes *src)
+{
+	dest->tex = src->tex;
+
+	psys_copy_track3(&dest->spawn_range, &src->spawn_range);
+	psys_copy_track(&dest->rate, &src->rate);
+
+	psys_copy_anm_rnd(&dest->life, &src->life);
+	psys_copy_anm_rnd(&dest->size, &src->size);
+	psys_copy_anm_rnd3(&dest->dir, &src->dir);
+
+	psys_copy_track3(&dest->grav, &src->grav);
+
+	dest->drag = src->drag;
+	dest->max_particles = src->max_particles;
+
+	/* also copy the particle attributes */
+	psys_copy_track3(&dest->part_attr.color, &src->part_attr.color);
+	psys_copy_track(&dest->part_attr.alpha, &src->part_attr.alpha);
+	psys_copy_track(&dest->part_attr.size, &src->part_attr.size);
+}
+
 void psys_eval_attr(struct psys_attributes *attr, anm_time_t tm)
 {
 	psys_eval_track3(&attr->spawn_range, tm);
@@ -192,6 +214,10 @@ int psys_load_attr_stream(struct psys_attributes *attr, FILE *fp)
 
 		if(strcmp(opt->name, "texture") == 0) {
 			if(opt->type != OPT_STR) {
+				goto err;
+			}
+			if(!load_texture) {
+				fprintf(stderr, "particle system requests a texture, but no texture loader available!\n");
 				goto err;
 			}
 			if(!(attr->tex = load_texture(opt->valstr, tex_cls))) {
@@ -340,7 +366,7 @@ static void release_cfg_opt(struct cfgopt *opt)
 }
 
 
-int psys_save_attr(struct psys_attributes *attr, const char *fname)
+int psys_save_attr(const struct psys_attributes *attr, const char *fname)
 {
 	FILE *fp;
 	int res;
@@ -354,7 +380,7 @@ int psys_save_attr(struct psys_attributes *attr, const char *fname)
 	return res;
 }
 
-int psys_save_attr_stream(struct psys_attributes *attr, FILE *fp)
+int psys_save_attr_stream(const struct psys_attributes *attr, FILE *fp)
 {
 	return -1;	/* TODO */
 }

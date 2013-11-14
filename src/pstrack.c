@@ -41,6 +41,21 @@ void psys_destroy_track3(struct psys_track3 *track)
 	anm_destroy_track(&track->z);
 }
 
+void psys_copy_track(struct psys_track *dest, const struct psys_track *src)
+{
+	anm_copy_track(&dest->trk, &src->trk);
+	dest->cache_tm = ANM_TIME_INVAL;
+}
+
+void psys_copy_track3(struct psys_track3 *dest, const struct psys_track3 *src)
+{
+	anm_copy_track(&dest->x, &src->x);
+	anm_copy_track(&dest->y, &src->y);
+	anm_copy_track(&dest->z, &src->z);
+
+	dest->cache_tm = ANM_TIME_INVAL;
+}
+
 void psys_eval_track(struct psys_track *track, anm_time_t tm)
 {
 	if(track->cache_tm != tm) {
