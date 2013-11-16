@@ -4,3 +4,8 @@
 ^Makefile$
 ^libpsys\.a$
 ^libpsys\.so\.
+\.suo$
+\.user$
+\.ncb$
+^Debug/
+^Release/
