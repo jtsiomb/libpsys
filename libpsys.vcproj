@@ -167,7 +167,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="mkdir usr\include\psys&#x0D;&#x0A;mkdir usr\lib&#x0D;&#x0A;copy /Y src\*.h usr\include\psys\&#x0D;&#x0A;copy /Y src\*.inl usr\include\psys\&#x0D;&#x0A;copy /Y $(TargetPath) usr\lib\&#x0D;&#x0A;copy /Y $(TargetDir)\$(TargetName).lib usr\lib\&#x0D;&#x0A;"
+				CommandLine="mkdir usr\include\psys&#x0D;&#x0A;mkdir usr\lib&#x0D;&#x0A;mkdir usr\bin&#x0D;&#x0A;copy /Y src\*.h usr\include\psys\&#x0D;&#x0A;copy /Y src\*.inl usr\include\psys\&#x0D;&#x0A;copy /Y $(TargetDir)\$(TargetName).dll usr\bin\&#x0D;&#x0A;copy /Y $(TargetDir)\$(TargetName).lib usr\lib\&#x0D;&#x0A;"
 			/>
 		</Configuration>
 	</Configurations>
