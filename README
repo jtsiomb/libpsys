@@ -2,6 +2,8 @@ libpsys - 0.1
 
 Libpsys is an easy to use, reusable, and extensible particle system library in C.
 
+main project site: http://code.google.com/p/libpsys/
+
 The three major design ideas behind libpsys are:
 
 * Ability to easily animate any particle system parameter, treating all
