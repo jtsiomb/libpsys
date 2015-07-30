@@ -1,6 +1,6 @@
 /*
 libpsys - reusable particle system library.
-Copyright (C) 2011-2014  John Tsiombikas <nuclear@member.fsf.org>
+Copyright (C) 2011-2015  John Tsiombikas <nuclear@member.fsf.org>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as published by
@@ -23,7 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "psys.h"
 #include "psys_gl.h"
 
-static int spawn(struct psys_emitter *em, struct psys_particle *p, void *cls);
+static int spawn_particle(struct psys_emitter *em, struct psys_particle *p);
 static void update_particle(struct psys_emitter *em, struct psys_particle *p, float tm, float dt, void *cls);
 
 /* particle pool */
@@ -68,7 +68,7 @@ int psys_init(struct psys_emitter *em)
 		return -1;
 	}
 
-	em->spawn = spawn;
+	em->spawn = 0;	/* no custom spawning, just the defaults */
 	em->update = update_particle;
 
 	em->draw = psys_gl_draw;
@@ -185,7 +185,10 @@ void psys_update(struct psys_emitter *em, float tm)
 	struct psys_particle *p, pdummy;
 	anm_time_t atm = ANM_SEC2TM(tm);
 
-	assert(em->spawn && em->update);
+	if(!em->update) {
+		fprintf(stderr, "psys_update called without an update callback\n");
+		abort();
+	}
 
 	dt = tm - em->last_update;
 	if(dt <= 0.0) {
@@ -216,7 +219,7 @@ void psys_update(struct psys_emitter *em, float tm)
 		if(!(p = palloc())) {
 			return;
 		}
-		if(em->spawn(em, p, em->spawn_cls) == -1) {
+		if(spawn_particle(em, p) == -1) {
 			pfree(p);
 		}
 		spawn_tm += spawn_dt;
@@ -268,7 +271,7 @@ void psys_draw(const struct psys_emitter *em)
 	}
 }
 
-static int spawn(struct psys_emitter *em, struct psys_particle *p, void *cls)
+static int spawn_particle(struct psys_emitter *em, struct psys_particle *p)
 {
 	struct psys_rnd3 rpos;
 	rpos.value = em->cur_pos;
@@ -280,6 +283,10 @@ static int spawn(struct psys_emitter *em, struct psys_particle *p, void *cls)
 	p->max_life = p->life = psys_eval_anm_rnd(&em->attr.life, PSYS_EVAL_CUR);
 
 	p->pattr = &em->attr.part_attr;
+
+	if(em->spawn && em->spawn(em, p, em->spawn_cls) == -1) {
+		return -1;
+	}
 
 	psys_add_particle(em, p);
 	return 0;

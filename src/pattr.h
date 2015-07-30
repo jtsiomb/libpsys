@@ -1,6 +1,6 @@
 /*
 libpsys - reusable particle system library.
-Copyright (C) 2011-2014  John Tsiombikas <nuclear@member.fsf.org>
+Copyright (C) 2011-2015  John Tsiombikas <nuclear@member.fsf.org>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as published by
@@ -28,6 +28,8 @@ struct psys_particle_attributes {
 	struct psys_track size;
 };
 
+enum psys_blending { PSYS_ADD, PSYS_ALPHA };
+
 struct psys_attributes {
 	unsigned int tex;	/* OpenGL texture to use for the billboard */
 
@@ -39,6 +41,8 @@ struct psys_attributes {
 
 	struct psys_track3 grav;		/* external force (usually gravity) */
 	float drag;	/* I don't think this needs to animate */
+
+	enum psys_blending blending;
 
 	/* particle attributes */
 	struct psys_particle_attributes part_attr;

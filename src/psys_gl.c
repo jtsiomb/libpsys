@@ -1,6 +1,6 @@
 /*
 libpsys - reusable particle system library.
-Copyright (C) 2011-2014  John Tsiombikas <nuclear@member.fsf.org>
+Copyright (C) 2011-2015  John Tsiombikas <nuclear@member.fsf.org>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as published by
@@ -39,7 +39,7 @@ void psys_gl_draw_start(const struct psys_emitter *em, void *cls)
 	glDisable(GL_LIGHTING);
 
 	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+	glBlendFunc(GL_SRC_ALPHA, em->attr.blending == PSYS_ADD ? GL_ONE : GL_ONE_MINUS_SRC_ALPHA);
 
 	if(em->attr.tex) {
 		glEnable(GL_TEXTURE_2D);

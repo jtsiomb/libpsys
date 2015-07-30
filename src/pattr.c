@@ -1,6 +1,6 @@
 /*
 libpsys - reusable particle system library.
-Copyright (C) 2011-2014  John Tsiombikas <nuclear@member.fsf.org>
+Copyright (C) 2011-2015  John Tsiombikas <nuclear@member.fsf.org>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as published by
@@ -108,6 +108,7 @@ int psys_init_attr(struct psys_attributes *attr)
 	anm_set_track_default(&attr->size.value.trk, 1.0);
 	anm_set_track_default(&attr->life.value.trk, 1.0);
 
+	attr->blending = PSYS_ADD;
 	return 0;
 
 err:
@@ -179,6 +180,8 @@ void psys_copy_attr(struct psys_attributes *dest, const struct psys_attributes *
 	dest->drag = src->drag;
 	dest->max_particles = src->max_particles;
 
+	dest->blending = src->blending;
+
 	/* also copy the particle attributes */
 	psys_copy_track3(&dest->part_attr.color, &src->part_attr.color);
 	psys_copy_track(&dest->part_attr.alpha, &src->part_attr.alpha);
@@ -244,6 +247,25 @@ int psys_load_attr_stream(struct psys_attributes *attr, FILE *fp)
 
 			release_cfg_opt(opt);
 			continue;
+
+		} else if(strcmp(opt->name, "blending") == 0) {
+			if(opt->type != OPT_STR) {
+				goto err;
+			}
+
+			/* parse blending mode */
+			if(strcmp(opt->valstr, "add") == 0 || strcmp(opt->valstr, "additive") == 0) {
+				attr->blending = PSYS_ADD;
+			} else if(strcmp(opt->valstr, "alpha") == 0) {
+				attr->blending = PSYS_ALPHA;
+			} else {
+				fprintf(stderr, "invalid blending mode: %s\n", opt->valstr);
+				goto err;
+			}
+
+			release_cfg_opt(opt);
+			continue;
+
 		} else if(opt->type == OPT_STR) {
 			fprintf(stderr, "invalid particle config: '%s'\n", opt->name);
 			goto err;
@@ -301,6 +323,7 @@ static struct cfgopt *get_cfg_opt(const char *line)
 	if(!(opt = malloc(sizeof *opt))) {
 		return 0;
 	}
+	memset(opt, 0, sizeof *opt);
 
 	if(!(opt->valstr = strchr(line, '='))) {
 		release_cfg_opt(opt);
