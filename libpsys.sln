@@ -1,9 +1,11 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 10.00
-# Visual Studio 2008
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libpsys", "libpsys.vcproj", "{6A19B25B-E1B5-423F-ADA9-446D0FCAFCE3}"
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.23107.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libpsys", "libpsys.vcxproj", "{6A19B25B-E1B5-423F-ADA9-446D0FCAFCE3}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libpsys_static", "libpsys_static.vcproj", "{10EE7CE4-81B0-4433-AB41-3B3FCCA1E93E}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libpsys_static", "libpsys_static.vcxproj", "{10EE7CE4-81B0-4433-AB41-3B3FCCA1E93E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
