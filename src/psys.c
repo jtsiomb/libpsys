@@ -19,9 +19,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <math.h>
 #include <float.h>
 #include <assert.h>
-#include <pthread.h>
 #include "psys.h"
 #include "psys_gl.h"
+#include <pthread.h>
 
 static int spawn_particle(struct psys_emitter *em, struct psys_particle *p);
 static void update_particle(struct psys_emitter *em, struct psys_particle *p, float tm, float dt, void *cls);
