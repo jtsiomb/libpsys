@@ -4,10 +4,15 @@ dep = $(obj:.o=.d)
 lib_a = libpsys.a
 hdr = $(wildcard src/*.h)
 
-ifeq ($(shell uname -s), Darwin)
+sys := $(patsubst MINGW32%,MINGW32,$(shell uname -s))
+ifeq ($(sys), Darwin)
 	lib_so = libpsys.dylib
 	shared = -dynamiclib
 	libgl = -framework OpenGL
+else ifeq ($(sys), MINGW32)
+	lib_so = libpsys.dll
+	shared = -shared
+	libgl = -lopengl32
 else
 	somajor = 0
 	sominor = 1
@@ -16,13 +21,14 @@ else
 	devlink = libpsys.so
 	shared = -shared -Wl,-soname,$(soname)
 	libgl = -lGL
+	pic = -fPIC
 endif
 
 
 CC = gcc
 AR = ar
-CFLAGS = -std=c89 -pedantic -Wall $(dbg) $(opt) -fPIC -Isrc
-LDFLAGS = -lanim -limago -lvmath $(libgl)
+CFLAGS = -std=c89 -pedantic -Wall $(dbg) $(opt) $(pic) -Isrc -I/usr/local/include
+LDFLAGS = -L/usr/local/lib -lanim -limago -lpng -ljpeg -lz -lvmath $(libgl) -lpthread
 
 .PHONY: all
 all: $(lib_a) $(lib_so)

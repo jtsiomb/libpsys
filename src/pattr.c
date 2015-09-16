@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <errno.h>
 #include <ctype.h>
 
-#ifdef _MSC_VER
+#ifdef __MSVCRT__
 #include <malloc.h>
 #else
 #include <alloca.h>

@@ -47,7 +47,7 @@ for arg; do
 	esac
 done
 
-check_vmath
+#check_vmath
 
 echo "prefix: $PREFIX"
 echo "optimize for speed: $OPT"
