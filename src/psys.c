@@ -206,7 +206,9 @@ void psys_update(struct psys_emitter *em, float tm)
 		spawn_count = 0;
 	}
 
-	spawn_dt = dt / (float)spawn_count;
+	if(spawn_count) {
+		spawn_dt = dt / (float)spawn_count;
+	}
 	spawn_tm = em->last_update;
 	for(i=0; i<spawn_count; i++) {
 		if(em->attr.max_particles >= 0 && em->pcount >= em->attr.max_particles) {
