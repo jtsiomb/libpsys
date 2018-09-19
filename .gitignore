@@ -1,0 +1,6 @@
+*.o
+*.d
+*.swp
+libpsys.a
+libpsys.so*
+Makefile
