@@ -21,6 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <string.h>
 #include <errno.h>
 #include <ctype.h>
+#include <assert.h>
 
 #ifdef __MSVCRT__
 #include <malloc.h>
@@ -386,7 +387,9 @@ static struct cfgopt *get_cfg_opt(const char *line)
 			buf[strlen(buf) - 1] = 0;
 		}
 		opt->type = OPT_STR;
-		opt->valstr = strdup(buf);
+		opt->valstr = malloc(strlen(buf) + 1);
+		assert(opt->valstr);
+		strcpy(opt->valstr, buf);
 	} else {
 		/* fuck it ... */
 		release_cfg_opt(opt);
