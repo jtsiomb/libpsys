@@ -28,7 +28,7 @@ endif
 CC = gcc
 AR = ar
 CFLAGS = -std=c89 -pedantic -Wall $(dbg) $(opt) $(pic) -Isrc -I/usr/local/include
-LDFLAGS = -L/usr/local/lib -lanim -limago -lpng -ljpeg -lz -lvmath $(libgl) -lpthread
+LDFLAGS = -L/usr/local/lib -lanim -limago -lpng -ljpeg -lz $(libgl) -lpthread
 
 .PHONY: all
 all: $(lib_a) $(lib_so)

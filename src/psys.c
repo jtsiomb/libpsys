@@ -1,6 +1,6 @@
 /*
 libpsys - reusable particle system library.
-Copyright (C) 2011-2015  John Tsiombikas <nuclear@member.fsf.org>
+Copyright (C) 2011-2018  John Tsiombikas <nuclear@member.fsf.org>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as published by
@@ -16,6 +16,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include <stdlib.h>
+#include <string.h>
 #include <math.h>
 #include <float.h>
 #include <assert.h>
@@ -24,7 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <pthread.h>
 
 static int spawn_particle(struct psys_emitter *em, struct psys_particle *p);
-static void update_particle(struct psys_emitter *em, struct psys_particle *p, float tm, float dt, void *cls);
+static void update_particle(struct psys_emitter *em, struct psys_particle *p, long tm, float dt, void *cls);
 
 /* particle pool */
 static struct psys_particle *ppool;
@@ -91,34 +92,44 @@ void psys_destroy(struct psys_emitter *em)
 	psys_destroy_attr(&em->attr);
 }
 
-void psys_set_pos(struct psys_emitter *em, vec3_t pos, float tm)
+void psys_set_pos(struct psys_emitter *em, const float *pos, long tm)
 {
-	anm_set_position(&em->prs, pos, ANM_SEC2TM(tm));
+	anm_set_position(&em->prs, pos, ANM_MSEC2TM(tm));
 }
 
-void psys_set_rot(struct psys_emitter *em, quat_t rot, float tm)
+void psys_set_pos3f(struct psys_emitter *em, float x, float y, float z, long tm)
 {
-	anm_set_rotation(&em->prs, rot, ANM_SEC2TM(tm));
+	anm_set_position3f(&em->prs, x, y, z, ANM_MSEC2TM(tm));
 }
 
-void psys_set_pivot(struct psys_emitter *em, vec3_t pivot)
+void psys_set_rot(struct psys_emitter *em, const float *qrot, long tm)
 {
-	anm_set_pivot(&em->prs, pivot);
+	anm_set_rotation(&em->prs, qrot, ANM_MSEC2TM(tm));
 }
 
-vec3_t psys_get_pos(struct psys_emitter *em, float tm)
+void psys_set_pivot(struct psys_emitter *em, const float *pivot)
 {
-	return anm_get_node_position(&em->prs, ANM_SEC2TM(tm));
+	anm_set_pivot(&em->prs, pivot[0], pivot[1], pivot[2]);
 }
 
-quat_t psys_get_rot(struct psys_emitter *em, float tm)
+void psys_set_pivot3f(struct psys_emitter *em, float x, float y, float z)
 {
-	return anm_get_node_rotation(&em->prs, ANM_SEC2TM(tm));
+	anm_set_pivot(&em->prs, x, y, z);
 }
 
-vec3_t psys_get_pivot(struct psys_emitter *em)
+void psys_get_pos(struct psys_emitter *em, float *pos, long tm)
 {
-	return anm_get_pivot(&em->prs);
+	anm_get_node_position(&em->prs, pos, ANM_MSEC2TM(tm));
+}
+
+void psys_get_rot(struct psys_emitter *em, float *qrot, long tm)
+{
+	anm_get_node_rotation(&em->prs, qrot, ANM_MSEC2TM(tm));
+}
+
+void psys_get_pivot(struct psys_emitter *em, float *pivot)
+{
+	anm_get_pivot(&em->prs, pivot, pivot + 1, pivot + 2);
 }
 
 void psys_clear_collision_planes(struct psys_emitter *em)
@@ -133,14 +144,17 @@ void psys_clear_collision_planes(struct psys_emitter *em)
 	}
 }
 
-int psys_add_collision_plane(struct psys_emitter *em, plane_t plane, float elast)
+int psys_add_collision_plane(struct psys_emitter *em, const float *plane, float elast)
 {
 	struct psys_plane *node;
 
 	if(!(node = malloc(sizeof *node))) {
 		return -1;
 	}
-	node->p = plane;
+	node->nx = plane[0];
+	node->ny = plane[1];
+	node->nz = plane[2];
+	node->d = plane[3];
 	node->elasticity = elast;
 	node->next = em->planes;
 	em->planes = node;
@@ -178,36 +192,41 @@ void psys_draw_func(struct psys_emitter *em, psys_draw_func_t draw,
 
 /* --- update and render --- */
 
-void psys_update(struct psys_emitter *em, float tm)
+void psys_update(struct psys_emitter *em, long tm)
 {
-	float dt, spawn_dt, spawn_tm;
+	long delta_ms, spawn_tm, spawn_dt;
+	float dt;
 	int i, spawn_count;
 	struct psys_particle *p, pdummy;
-	anm_time_t atm = ANM_SEC2TM(tm);
+	anm_time_t atm = ANM_MSEC2TM(tm);
 
 	if(!em->update) {
-		fprintf(stderr, "psys_update called without an update callback\n");
-		abort();
+		static int once;
+		if(!once) {
+			once = 1;
+			fprintf(stderr, "psys_update called without an update callback\n");
+		}
 	}
 
-	dt = tm - em->last_update;
-	if(dt <= 0.0) {
+	delta_ms = tm - em->last_update;
+	if(delta_ms <= 0) {
 		return;
 	}
+	dt = (float)delta_ms / 1000.0f;
 
 	psys_eval_attr(&em->attr, atm);
 
 	/* how many particles to spawn for this interval ? */
-	em->spawn_acc += psys_get_cur_value(&em->attr.rate) * dt;
-	if(em->spawn_acc >= 1.0) {
-		spawn_count = em->spawn_acc;
-		em->spawn_acc = fmod(em->spawn_acc, 1.0);
+	em->spawn_acc += psys_get_cur_value(&em->attr.rate) * delta_ms;
+	if(em->spawn_acc >= 1000) {
+		spawn_count = em->spawn_acc / 1000;
+		em->spawn_acc %= 1000;
 	} else {
 		spawn_count = 0;
 	}
 
 	if(spawn_count) {
-		spawn_dt = dt / (float)spawn_count;
+		spawn_dt = delta_ms / spawn_count;
 	}
 	spawn_tm = em->last_update;
 	for(i=0; i<spawn_count; i++) {
@@ -216,7 +235,7 @@ void psys_update(struct psys_emitter *em, float tm)
 		}
 
 		/* update emitter position for this spawning */
-		em->cur_pos = anm_get_position(&em->prs, ANM_SEC2TM(spawn_tm));
+		anm_get_position(&em->prs, em->cur_pos, ANM_MSEC2TM(spawn_tm));
 
 		if(!(p = palloc())) {
 			return;
@@ -275,12 +294,16 @@ void psys_draw(const struct psys_emitter *em)
 
 static int spawn_particle(struct psys_emitter *em, struct psys_particle *p)
 {
+	int i;
 	struct psys_rnd3 rpos;
-	rpos.value = em->cur_pos;
-	rpos.range = psys_get_cur_value3(&em->attr.spawn_range);
 
-	p->pos = psys_eval_rnd3(&rpos);
-	p->vel = psys_eval_anm_rnd3(&em->attr.dir, PSYS_EVAL_CUR);
+	for(i=0; i<3; i++) {
+		rpos.value[i] = em->cur_pos[i];
+	}
+	psys_get_cur_value3(&em->attr.spawn_range, rpos.range);
+
+	psys_eval_rnd3(&rpos, &p->x);
+	psys_eval_anm_rnd3(&em->attr.dir, PSYS_EVAL_CUR, &p->vx);
 	p->base_size = psys_eval_anm_rnd(&em->attr.size, PSYS_EVAL_CUR);
 	p->max_life = p->life = psys_eval_anm_rnd(&em->attr.life, PSYS_EVAL_CUR);
 
@@ -294,29 +317,29 @@ static int spawn_particle(struct psys_emitter *em, struct psys_particle *p)
 	return 0;
 }
 
-static void update_particle(struct psys_emitter *em, struct psys_particle *p, float tm, float dt, void *cls)
+static void update_particle(struct psys_emitter *em, struct psys_particle *p, long tm, float dt, void *cls)
 {
-	vec3_t accel, grav;
+	float accel[3], grav[3];
 	anm_time_t t;
 
-	grav = psys_get_cur_value3(&em->attr.grav);
+	psys_get_cur_value3(&em->attr.grav, grav);
 
-	accel.x = grav.x - p->vel.x * em->attr.drag;
-	accel.y = grav.y - p->vel.y * em->attr.drag;
-	accel.z = grav.z - p->vel.z * em->attr.drag;
+	accel[0] = grav[0] - p->vx * em->attr.drag;
+	accel[1] = grav[1] - p->vy * em->attr.drag;
+	accel[2] = grav[2] - p->vz * em->attr.drag;
 
-	p->vel.x += accel.x * dt;
-	p->vel.y += accel.y * dt;
-	p->vel.z += accel.z * dt;
+	p->vx += accel[0] * dt;
+	p->vy += accel[1] * dt;
+	p->vz += accel[2] * dt;
 
-	p->pos.x += p->vel.x * dt;
-	p->pos.y += p->vel.y * dt;
-	p->pos.z += p->vel.z * dt;
+	p->x += p->vx * dt;
+	p->y += p->vy * dt;
+	p->z += p->vz * dt;
 
 	/* update particle attributes */
-	t = (anm_time_t)(1000.0 * (p->max_life - p->life) / p->max_life);
+	t = (anm_time_t)(1000.0f * (p->max_life - p->life) / p->max_life);
 
-	p->color = psys_get_value3(&p->pattr->color, t);
+	psys_get_value3(&p->pattr->color, t, &p->r);
 	p->alpha = psys_get_value(&p->pattr->alpha, t);
 	p->size = p->base_size * psys_get_value(&p->pattr->size, t);
 

@@ -1,6 +1,6 @@
 /*
 libpsys - reusable particle system library.
-Copyright (C) 2011-2014  John Tsiombikas <nuclear@member.fsf.org>
+Copyright (C) 2011-2018  John Tsiombikas <nuclear@member.fsf.org>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as published by
@@ -18,7 +18,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef LIBPSYS_H_
 #define LIBPSYS_H_
 
-#include <vmath/vmath.h>
 #include <anim/anim.h>
 #include "rndval.h"
 #include "pattr.h"
@@ -27,7 +26,7 @@ struct psys_particle;
 struct psys_emitter;
 
 typedef int (*psys_spawn_func_t)(struct psys_emitter*, struct psys_particle*, void*);
-typedef void (*psys_update_func_t)(struct psys_emitter*, struct psys_particle*, float, float, void*);
+typedef void (*psys_update_func_t)(struct psys_emitter*, struct psys_particle*, long, float, void*);
 
 typedef void (*psys_draw_func_t)(const struct psys_emitter*, const struct psys_particle*, void*);
 typedef void (*psys_draw_start_func_t)(const struct psys_emitter*, void*);
@@ -35,7 +34,7 @@ typedef void (*psys_draw_end_func_t)(const struct psys_emitter*, void*);
 
 
 struct psys_plane {
-	plane_t p;
+	float nx, ny, nz, d;
 	float elasticity;
 	struct psys_plane *next;
 };
@@ -43,7 +42,7 @@ struct psys_plane {
 
 struct psys_emitter {
 	struct anm_node prs;
-	vec3_t cur_pos;
+	float cur_pos[3];
 
 	struct psys_attributes attr;
 
@@ -68,20 +67,21 @@ struct psys_emitter {
 	psys_draw_start_func_t draw_start;
 	psys_draw_end_func_t draw_end;
 
-	float spawn_acc;	/* partial spawn accumulator */
-	float last_update;	/* last update time (to calc dt) */
+	long spawn_acc;		/* partial spawn accumulator */
+	long last_update;	/* last update time (to calc dt) */
 };
 
 
 struct psys_particle {
-	vec3_t pos, vel;
+	float x, y, z;
+	float vx, vy, vz;
 	float life, max_life;
 	float base_size;
 
 	struct psys_particle_attributes *pattr;
 
 	/* current particle attr values calculated during update */
-	vec3_t color;
+	float r, g, b;
 	float alpha, size;
 
 	struct psys_particle *next;
@@ -98,16 +98,28 @@ int psys_init(struct psys_emitter *em);
 void psys_destroy(struct psys_emitter *em);
 
 /* set properties */
-void psys_set_pos(struct psys_emitter *em, vec3_t pos, float tm);
-void psys_set_rot(struct psys_emitter *em, quat_t rot, float tm);
-void psys_set_pivot(struct psys_emitter *em, vec3_t pivot);
 
-vec3_t psys_get_pos(struct psys_emitter *em, float tm);
-quat_t psys_get_rot(struct psys_emitter *em, float tm);
-vec3_t psys_get_pivot(struct psys_emitter *em);
+/* set emitter position. pos should point to 3 floats (xyz) */
+void psys_set_pos(struct psys_emitter *em, const float *pos, long tm);
+void psys_set_pos3f(struct psys_emitter *em, float x, float y, float z, long tm);
+/* set emitter rotation quaternion. qrot should point to 4 floats (xyzw) */
+void psys_set_rot(struct psys_emitter *em, const float *qrot, long tm);
+void psys_set_rot4f(struct psys_emitter *em, float x, float y, float z, float w, long tm);
+/* set emitter rotation by defining a rotation axis, and an angle */
+void psys_set_rot_axis(struct psys_emitter *em, float angle, float x, float y, float z, long tm);
+/* set rotation pivot point. pos should point to 3 floats (xyz) */
+void psys_set_pivot(struct psys_emitter *em, const float *pivot);
+void psys_set_pivot3f(struct psys_emitter *em, float x, float y, float z);
+
+/* pos should be a pointer to 3 floats (xyz) */
+void psys_get_pos(struct psys_emitter *em, float *pos, long tm);
+/* qrot should be a pointer to 4 floats (xyzw) */
+void psys_get_rot(struct psys_emitter *em, float *qrot, long tm);
+/* pivot should be a pointer to 3 floats (xyz) */
+void psys_get_pivot(struct psys_emitter *em, float *pivot);
 
 void psys_clear_collision_planes(struct psys_emitter *em);
-int psys_add_collision_plane(struct psys_emitter *em, plane_t plane, float elast);
+int psys_add_collision_plane(struct psys_emitter *em, const float *plane, float elast);
 
 void psys_add_particle(struct psys_emitter *em, struct psys_particle *p);
 
@@ -118,7 +130,7 @@ void psys_draw_func(struct psys_emitter *em, psys_draw_func_t draw,
 
 /* update and render */
 
-void psys_update(struct psys_emitter *em, float tm);
+void psys_update(struct psys_emitter *em, long tm);
 void psys_draw(const struct psys_emitter *em);
 
 #ifdef __cplusplus

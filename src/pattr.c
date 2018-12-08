@@ -1,6 +1,6 @@
 /*
 libpsys - reusable particle system library.
-Copyright (C) 2011-2015  John Tsiombikas <nuclear@member.fsf.org>
+Copyright (C) 2011-2018  John Tsiombikas <nuclear@member.fsf.org>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as published by
@@ -45,7 +45,7 @@ struct cfgopt {
 	int type;
 	long tm;
 	char *valstr;
-	vec3_t val, valrng;
+	float val[3], valrng[3];
 };
 
 static int init_particle_attr(struct psys_particle_attributes *pattr);
@@ -191,11 +191,13 @@ void psys_copy_attr(struct psys_attributes *dest, const struct psys_attributes *
 
 void psys_eval_attr(struct psys_attributes *attr, anm_time_t tm)
 {
+	float tmp[3];
+
 	psys_eval_track3(&attr->spawn_range, tm);
 	psys_eval_track(&attr->rate, tm);
 	psys_eval_anm_rnd(&attr->life, tm);
 	psys_eval_anm_rnd(&attr->size, tm);
-	psys_eval_anm_rnd3(&attr->dir, tm);
+	psys_eval_anm_rnd3(&attr->dir, tm, tmp);
 	psys_eval_track3(&attr->grav, tm);
 }
 
@@ -209,7 +211,7 @@ int psys_load_attr(struct psys_attributes *attr, const char *fname)
 	}
 
 	if(!(fp = fopen(fname, "r"))) {
-		fprintf(stderr, "%s: failed to read file: %s: %s\n", __FUNCTION__, fname, strerror(errno));
+		fprintf(stderr, "psys_load_attr: failed to read file: %s: %s\n", fname, strerror(errno));
 		return -1;
 	}
 	res = psys_load_attr_stream(attr, fp);
@@ -273,25 +275,25 @@ int psys_load_attr_stream(struct psys_attributes *attr, FILE *fp)
 		}
 
 		if(strcmp(opt->name, "spawn_range") == 0) {
-			psys_set_value3(&attr->spawn_range, opt->tm, opt->val);
+			psys_set_value3(&attr->spawn_range, opt->tm, opt->val[0], opt->val[1], opt->val[2]);
 		} else if(strcmp(opt->name, "rate") == 0) {
-			psys_set_value(&attr->rate, opt->tm, opt->val.x);
+			psys_set_value(&attr->rate, opt->tm, opt->val[0]);
 		} else if(strcmp(opt->name, "life") == 0) {
-			psys_set_anm_rnd(&attr->life, opt->tm, opt->val.x, opt->valrng.x);
+			psys_set_anm_rnd(&attr->life, opt->tm, opt->val[0], opt->valrng[0]);
 		} else if(strcmp(opt->name, "size") == 0) {
-			psys_set_anm_rnd(&attr->size, opt->tm, opt->val.x, opt->valrng.x);
+			psys_set_anm_rnd(&attr->size, opt->tm, opt->val[0], opt->valrng[0]);
 		} else if(strcmp(opt->name, "dir") == 0) {
 			psys_set_anm_rnd3(&attr->dir, opt->tm, opt->val, opt->valrng);
 		} else if(strcmp(opt->name, "grav") == 0) {
-			psys_set_value3(&attr->grav, opt->tm, opt->val);
+			psys_set_value3(&attr->grav, opt->tm, opt->val[0], opt->val[1], opt->val[2]);
 		} else if(strcmp(opt->name, "drag") == 0) {
-			attr->drag = opt->val.x;
+			attr->drag = opt->val[0];
 		} else if(strcmp(opt->name, "pcolor") == 0) {
-			psys_set_value3(&attr->part_attr.color, opt->tm, opt->val);
+			psys_set_value3(&attr->part_attr.color, opt->tm, opt->val[0], opt->val[1], opt->val[2]);
 		} else if(strcmp(opt->name, "palpha") == 0) {
-			psys_set_value(&attr->part_attr.alpha, opt->tm, opt->val.x);
+			psys_set_value(&attr->part_attr.alpha, opt->tm, opt->val[0]);
 		} else if(strcmp(opt->name, "psize") == 0) {
-			psys_set_value(&attr->part_attr.size, opt->tm, opt->val.x);
+			psys_set_value(&attr->part_attr.size, opt->tm, opt->val[0]);
 		} else {
 			fprintf(stderr, "unrecognized particle config option: %s\n", opt->name);
 			goto err;
@@ -359,27 +361,27 @@ static struct cfgopt *get_cfg_opt(const char *line)
 		opt->tm = 0;
 	}
 
-	if(sscanf(opt->valstr, "[%f %f %f] ~ [%f %f %f]", &opt->val.x, &opt->val.y, &opt->val.z,
-				&opt->valrng.x, &opt->valrng.y, &opt->valrng.z) == 6) {
+	if(sscanf(opt->valstr, "[%f %f %f] ~ [%f %f %f]", opt->val, opt->val + 1, opt->val + 2,
+				opt->valrng, opt->valrng + 1, opt->valrng + 2) == 6) {
 		/* value is a vector range */
 		opt->type = OPT_VEC_RANGE;
 
-	} else if(sscanf(opt->valstr, "%f ~ %f", &opt->val.x, &opt->valrng.x) == 2) {
+	} else if(sscanf(opt->valstr, "%f ~ %f", opt->val, opt->valrng) == 2) {
 		/* value is a number range */
 		opt->type = OPT_NUM_RANGE;
-		opt->val.y = opt->val.z = opt->val.x;
-		opt->valrng.y = opt->valrng.z = opt->valrng.x;
+		opt->val[1] = opt->val[2] = opt->val[0];
+		opt->valrng[1] = opt->valrng[2] = opt->valrng[0];
 
-	} else if(sscanf(opt->valstr, "[%f %f %f]", &opt->val.x, &opt->val.y, &opt->val.z) == 3) {
+	} else if(sscanf(opt->valstr, "[%f %f %f]", opt->val, opt->val + 1, opt->val + 2) == 3) {
 		/* value is a vector */
 		opt->type = OPT_VEC;
-		opt->valrng.x = opt->valrng.y = opt->valrng.z = 0.0f;
+		opt->valrng[0] = opt->valrng[1] = opt->valrng[2] = 0.0f;
 
-	} else if(sscanf(opt->valstr, "%f", &opt->val.x) == 1) {
+	} else if(sscanf(opt->valstr, "%f", opt->val) == 1) {
 		/* value is a number */
 		opt->type = OPT_NUM;
-		opt->val.y = opt->val.z = opt->val.x;
-		opt->valrng.x = opt->valrng.y = opt->valrng.z = 0.0f;
+		opt->val[1] = opt->val[2] = opt->val[0];
+		opt->valrng[0] = opt->valrng[1] = opt->valrng[2] = 0.0f;
 
 	} else if(sscanf(opt->valstr, "\"%s\"", buf) == 1) {
 		/* just a string... strip the quotes */
@@ -415,7 +417,7 @@ int psys_save_attr(const struct psys_attributes *attr, const char *fname)
 	int res;
 
 	if(!(fp = fopen(fname, "w"))) {
-		fprintf(stderr, "%s: failed to write file: %s: %s\n", __FUNCTION__, fname, strerror(errno));
+		fprintf(stderr, "psys_save_attr: failed to write file: %s: %s\n", fname, strerror(errno));
 		return -1;
 	}
 	res = psys_save_attr_stream(attr, fp);

@@ -1,6 +1,6 @@
 /*
 libpsys - reusable particle system library.
-Copyright (C) 2011-2014  John Tsiombikas <nuclear@member.fsf.org>
+Copyright (C) 2011-2018  John Tsiombikas <nuclear@member.fsf.org>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as published by
@@ -18,7 +18,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef PSTRACK_H_
 #define PSTRACK_H_
 
-#include <vmath/vmath.h>
 #include <anim/anim.h>
 
 struct psys_track {
@@ -32,7 +31,7 @@ struct psys_track3 {
 	struct anm_track x, y, z;
 
 	anm_time_t cache_tm;
-	vec3_t cache_vec;
+	float cache_vec[3];
 };
 
 #ifdef __cplusplus
@@ -55,9 +54,10 @@ float psys_get_value(struct psys_track *track, anm_time_t tm);
 float psys_get_cur_value(struct psys_track *track);
 
 void psys_eval_track3(struct psys_track3 *track, anm_time_t tm);
-void psys_set_value3(struct psys_track3 *track, anm_time_t tm, vec3_t v);
-vec3_t psys_get_value3(struct psys_track3 *track, anm_time_t tm);
-vec3_t psys_get_cur_value3(struct psys_track3 *track);
+void psys_set_value3(struct psys_track3 *track, anm_time_t tm, float x, float y, float z);
+/* returns pointer to the internal cached value, and if vec is not null, also copies it there */
+float *psys_get_value3(struct psys_track3 *track, anm_time_t tm, float *vec);
+float *psys_get_cur_value3(struct psys_track3 *track, float *vec);
 
 #ifdef __cplusplus
 }

@@ -1,6 +1,6 @@
 /*
 libpsys - reusable particle system library.
-Copyright (C) 2011-2015  John Tsiombikas <nuclear@member.fsf.org>
+Copyright (C) 2011-2018  John Tsiombikas <nuclear@member.fsf.org>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as published by
@@ -58,7 +58,7 @@ void psys_gl_draw(const struct psys_emitter *em, const struct psys_particle *p, 
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
 
-	glTranslatef(p->pos.x, p->pos.y, p->pos.z);
+	glTranslatef(p->x, p->y, p->z);
 
 	glGetFloatv(GL_MODELVIEW_MATRIX, xform);
 	xform[0] = xform[5] = xform[10] = 1.0;
@@ -66,7 +66,7 @@ void psys_gl_draw(const struct psys_emitter *em, const struct psys_particle *p, 
 	glLoadMatrixf(xform);
 
 	glBegin(GL_QUADS);
-	glColor4f(p->color.x, p->color.y, p->color.z, p->alpha);
+	glColor4f(p->r, p->g, p->b, p->alpha);
 
 	glTexCoord2f(0, 0);
 	glVertex2f(-hsz, -hsz);
@@ -101,7 +101,7 @@ unsigned int psys_gl_load_texture(const char *fname, void *cls)
 	if(!(pixels = img_load_pixels(fname, &xsz, &ysz, IMG_FMT_RGBA32))) {
 		return 0;
 	}
-	printf("%s: creating texture %s (%dx%d)\n", __FUNCTION__, fname, xsz, ysz);
+	printf("psys_gl_load_texture: creating texture %s (%dx%d)\n",  fname, xsz, ysz);
 
 	glGenTextures(1, &tex);
 	glBindTexture(GL_TEXTURE_2D, tex);

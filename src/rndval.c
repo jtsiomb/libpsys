@@ -1,6 +1,6 @@
 /*
 libpsys - reusable particle system library.
-Copyright (C) 2011-2014  John Tsiombikas <nuclear@member.fsf.org>
+Copyright (C) 2011-2018  John Tsiombikas <nuclear@member.fsf.org>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as published by
@@ -72,10 +72,13 @@ void psys_set_rnd(struct psys_rnd *r, float val, float range)
 	r->range = range;
 }
 
-void psys_set_rnd3(struct psys_rnd3 *r, vec3_t val, vec3_t range)
+void psys_set_rnd3(struct psys_rnd3 *r, const float *val, const float *range)
 {
-	r->value = val;
-	r->range = range;
+	int i;
+	for(i=0; i<3; i++) {
+		r->value[i] = val[i];
+		r->range[i] = range[i];
+	}
 }
 
 void psys_set_anm_rnd(struct psys_anm_rnd *r, anm_time_t tm, float val, float range)
@@ -84,10 +87,10 @@ void psys_set_anm_rnd(struct psys_anm_rnd *r, anm_time_t tm, float val, float ra
 	psys_set_value(&r->range, tm, range);
 }
 
-void psys_set_anm_rnd3(struct psys_anm_rnd3 *r, anm_time_t tm, vec3_t val, vec3_t range)
+void psys_set_anm_rnd3(struct psys_anm_rnd3 *r, anm_time_t tm, const float *val, const float *range)
 {
-	psys_set_value3(&r->value, tm, val);
-	psys_set_value3(&r->range, tm, range);
+	psys_set_value3(&r->value, tm, val[0], val[1], val[2]);
+	psys_set_value3(&r->range, tm, range[0], range[1], range[2]);
 }
 
 
@@ -96,13 +99,11 @@ float psys_eval_rnd(struct psys_rnd *r)
 	return r->value + r->range * (float)rand() / (float)RAND_MAX - 0.5 * r->range;
 }
 
-vec3_t psys_eval_rnd3(struct psys_rnd3 *r)
+void psys_eval_rnd3(struct psys_rnd3 *r, float *val)
 {
-	vec3_t res;
-	res.x = r->value.x + r->range.x * (float)rand() / (float)RAND_MAX - 0.5 * r->range.x;
-	res.y = r->value.y + r->range.y * (float)rand() / (float)RAND_MAX - 0.5 * r->range.y;
-	res.z = r->value.z + r->range.z * (float)rand() / (float)RAND_MAX - 0.5 * r->range.z;
-	return res;
+	val[0] = r->value[0] + r->range[0] * (float)rand() / (float)RAND_MAX - 0.5 * r->range[0];
+	val[1] = r->value[1] + r->range[1] * (float)rand() / (float)RAND_MAX - 0.5 * r->range[1];
+	val[2] = r->value[2] + r->range[2] * (float)rand() / (float)RAND_MAX - 0.5 * r->range[2];
 }
 
 
@@ -119,15 +120,15 @@ float psys_eval_anm_rnd(struct psys_anm_rnd *r, anm_time_t tm)
 	return psys_eval_rnd(&tmp);
 }
 
-vec3_t psys_eval_anm_rnd3(struct psys_anm_rnd3 *r, anm_time_t tm)
+void psys_eval_anm_rnd3(struct psys_anm_rnd3 *r, anm_time_t tm, float *val)
 {
 	struct psys_rnd3 tmp;
 	if(tm == ANM_TIME_INVAL) {
-		tmp.value = psys_get_cur_value3(&r->value);
-		tmp.range = psys_get_cur_value3(&r->range);
+		psys_get_cur_value3(&r->value, tmp.value);
+		psys_get_cur_value3(&r->range, tmp.range);
 	} else {
-		tmp.value = psys_get_value3(&r->value, tm);
-		tmp.range = psys_get_value3(&r->range, tm);
+		psys_get_value3(&r->value, tm, tmp.value);
+		psys_get_value3(&r->range, tm, tmp.range);
 	}
-	return psys_eval_rnd3(&tmp);
+	psys_eval_rnd3(&tmp, val);
 }

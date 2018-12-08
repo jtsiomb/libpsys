@@ -1,6 +1,6 @@
 /*
 libpsys - reusable particle system library.
-Copyright (C) 2011-2014  John Tsiombikas <nuclear@member.fsf.org>
+Copyright (C) 2011-2018  John Tsiombikas <nuclear@member.fsf.org>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as published by
@@ -18,7 +18,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef RNDVAL_H_
 #define RNDVAL_H_
 
-#include <vmath/vmath.h>
 #include "pstrack.h"
 
 struct psys_rnd {
@@ -26,7 +25,7 @@ struct psys_rnd {
 };
 
 struct psys_rnd3 {
-	vec3_t value, range;
+	float value[3], range[3];
 };
 
 struct psys_anm_rnd {
@@ -52,16 +51,16 @@ void psys_copy_anm_rnd(struct psys_anm_rnd *dest, const struct psys_anm_rnd *src
 void psys_copy_anm_rnd3(struct psys_anm_rnd3 *dest, const struct psys_anm_rnd3 *src);
 
 void psys_set_rnd(struct psys_rnd *r, float val, float range);
-void psys_set_rnd3(struct psys_rnd3 *r, vec3_t val, vec3_t range);
+void psys_set_rnd3(struct psys_rnd3 *r, const float *val, const float *range);
 
 void psys_set_anm_rnd(struct psys_anm_rnd *r, anm_time_t tm, float val, float range);
-void psys_set_anm_rnd3(struct psys_anm_rnd3 *r, anm_time_t tm, vec3_t val, vec3_t range);
+void psys_set_anm_rnd3(struct psys_anm_rnd3 *r, anm_time_t tm, const float *val, const float *range);
 
 float psys_eval_rnd(struct psys_rnd *r);
-vec3_t psys_eval_rnd3(struct psys_rnd3 *r);
+void psys_eval_rnd3(struct psys_rnd3 *r, float *val);
 
 float psys_eval_anm_rnd(struct psys_anm_rnd *r, anm_time_t tm);
-vec3_t psys_eval_anm_rnd3(struct psys_anm_rnd3 *r, anm_time_t tm);
+void psys_eval_anm_rnd3(struct psys_anm_rnd3 *r, anm_time_t tm, float *val);
 
 #ifdef __cplusplus
 }
