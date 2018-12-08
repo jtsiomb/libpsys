@@ -7,9 +7,8 @@ incdir = ../../src
 libdir = ../..
 liba = $(libdir)/libpsys.a
 
-CC = gcc
-CFLAGS = -pedantic -Wall -g -I$(incdir) `pkg-config --cflags vmath`
-LDFLAGS = -L$(libdir) $(liba) $(libgl) -lanim -limago `pkg-config --libs vmath` -lm
+CFLAGS = -pedantic -Wall -g -I$(incdir)
+LDFLAGS = -L$(libdir) $(liba) $(libgl) -lanim -limago -lm
 
 ifeq ($(shell uname -s), Darwin)
 	libgl = -framework OpenGL -framework GLUT

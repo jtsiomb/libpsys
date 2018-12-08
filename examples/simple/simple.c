@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 #include <assert.h>
 
 #ifndef __APPLE__
@@ -8,7 +9,6 @@
 #include <GLUT/glut.h>
 #endif
 
-#include <vmath.h>
 #include <imago2.h>
 #include "psys.h"
 
@@ -19,7 +19,7 @@ void reshape(int x, int y);
 void keyb(unsigned char key, int x, int y);
 void mouse(int bn, int state, int x, int y);
 void motion(int x, int y);
-vec3_t get_mouse_hit(float x, float y);
+void get_mouse_hit(float x, float y, float *pos);
 unsigned int load_texture(const char *fname);
 
 struct psys_emitter *ps;
@@ -83,7 +83,6 @@ void cleanup(void)
 
 void disp(void)
 {
-	static unsigned int prev_msec;
 	unsigned int msec = glutGet(GLUT_ELAPSED_TIME);
 
 	glMatrixMode(GL_MODELVIEW);
@@ -92,7 +91,7 @@ void disp(void)
 
 	glClear(GL_COLOR_BUFFER_BIT);
 
-	psys_update(ps, (msec - prev_msec) / 1000.0);
+	psys_update(ps, msec);
 	psys_draw(ps);
 
 	glutSwapBuffers();
@@ -126,25 +125,28 @@ void mouse(int bn, int state, int x, int y)
 {
 	bnstate[bn - GLUT_LEFT_BUTTON] = state == GLUT_DOWN;
 	if(bn == GLUT_LEFT_BUTTON) {
+		float pos[3];
+		get_mouse_hit(x, y, pos);
+
 		psys_set_value(&ps->attr.rate, 0, state == GLUT_DOWN ? RATE : 0.0);
-		psys_set_pos(ps, get_mouse_hit(x, y), 0);
+		psys_set_pos(ps, pos, 0);
 	}
 }
 
 void motion(int x, int y)
 {
 	if(bnstate[0]) {
-		psys_set_pos(ps, get_mouse_hit(x, y), 0);
+		float pos[3];
+		get_mouse_hit(x, y, pos);
+		psys_set_pos(ps, pos, 0);
 	}
 }
 
-vec3_t get_mouse_hit(float x, float y)
+void get_mouse_hit(float x, float y, float *pos)
 {
 	double mv[16], proj[16];
 	int vp[4];
-	double res_x, res_y, res_z;
-	float t;
-	vec3_t res, pnear, pfar;
+	double t, nx, ny, nz, fx, fy, fz;
 
 	glGetDoublev(GL_MODELVIEW_MATRIX, mv);
 	glGetDoublev(GL_PROJECTION_MATRIX, proj);
@@ -152,20 +154,14 @@ vec3_t get_mouse_hit(float x, float y)
 
 	y = vp[3] - y;
 
-	gluUnProject(x, y, 0, mv, proj, vp, &res_x, &res_y, &res_z);
-	pnear.x = res_x;
-	pnear.y = res_y;
-	pnear.z = res_z;
+	gluUnProject(x, y, 0, mv, proj, vp, &nx, &ny, &nz);
+	gluUnProject(x, y, 1, mv, proj, vp, &fx, &fy, &fz);
 
-	gluUnProject(x, y, 1, mv, proj, vp, &res_x, &res_y, &res_z);
-	pfar.x = res_x;
-	pfar.y = res_y;
-	pfar.z = res_z;
+	t = fabs(nz) / fabs(fz - nz);
 
-	t = fabs(pnear.z) / fabs(pfar.z - pnear.z);
-	res = v3_add(pnear, v3_scale(v3_sub(pfar, pnear), t));
-
-	return res;
+	pos[0] = nx + (fx - nx) * t;
+	pos[1] = ny + (fy - ny) * t;
+	pos[2] = nz + (fz - nz) * t;
 }
 
 unsigned int load_texture(const char *fname)
