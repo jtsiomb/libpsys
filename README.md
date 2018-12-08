@@ -1,5 +1,5 @@
-libpsys - 0.1
-=============
+libpsys
+=======
 
 Overview
 --------
@@ -17,9 +17,15 @@ The three major design ideas behind libpsys are:
  - Maintain a simple, orthogonal, easy to use, and intuitive API. 
 
 Libpsys depends on:
-
- - libvmath: http://github.com/jtsiomb/libvmath
  - libanim: http://github.com/jtsiomb/libanim
+ - libimago: http://github.com/jtsiomb/libimago
+
+Current libpsys has been modified to drop dependency to libvmath, and to make it
+compatible with the new libanim 2.0, which did likewise. Libpsys version number
+has been also bumped to 2.0 to signify this dependency relationship with libanim
+2.0, and also because these changes make it binary and source incompatible with
+earlier libpsys versions.
+
 
 License
 -------

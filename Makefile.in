@@ -4,6 +4,9 @@ dep = $(obj:.o=.d)
 lib_a = libpsys.a
 hdr = $(wildcard src/*.h)
 
+somajor = 1
+sominor = 0
+
 sys := $(patsubst MINGW32%,MINGW32,$(shell uname -s))
 ifeq ($(sys), Darwin)
 	lib_so = libpsys.dylib
@@ -14,11 +17,9 @@ else ifeq ($(sys), MINGW32)
 	shared = -shared
 	libgl = -lopengl32
 else
-	somajor = 0
-	sominor = 1
 	soname = libpsys.so.$(somajor)
 	lib_so = $(soname).$(sominor)
-	devlink = libpsys.so
+	ldname = libpsys.so
 	shared = -shared -Wl,-soname,$(soname)
 	libgl = -lGL
 	pic = -fPIC
@@ -53,9 +54,9 @@ install: $(lib_a) $(lib_so)
 	cp $(lib_so) $(DESTDIR)$(PREFIX)/lib/$(lib_so)
 	[ -n "$(soname)" ] \
 		&& cd $(DESTDIR)$(PREFIX)/lib \
-		&& rm -f $(soname) $(devlink) \
+		&& rm -f $(soname) $(ldname) \
 		&& ln -s $(lib_so) $(soname) \
-		&& ln -s $(soname) $(devlink) \
+		&& ln -s $(soname) $(ldname) \
 		|| true
 
 .PHONY: uninstall
@@ -66,7 +67,7 @@ uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/lib/$(lib_so)
 	[ -n "$(soname)" ] \
 		&& cd $(DESTDIR)$(PREFIX)/lib \
-		&& rm -f $(soname) $(devlink) \
+		&& rm -f $(soname) $(ldname) \
 		|| true
 
 .PHONY: clean

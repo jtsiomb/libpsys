@@ -4,3 +4,4 @@
 libpsys.a
 libpsys.so*
 Makefile
+examples/simple/simple
